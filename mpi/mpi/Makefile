@@ -6,7 +6,7 @@ libmpid : mpi_wrapper.c mpi.d
 	${MPICC} -c mpi_wrapper.c
 	${DC} -c -H -Hd../../include -version=${MPIVERSION} mpi.d
 ifdef BUILDSHARED
-	${MPICC} ${SOFLAG} -o ../../lib/libmpid.${SOEXT} mpi_wrapper.o mpi.o -L${DMDDIR} -lphobos2
+	${MPICC} ${SOFLAG} -o ../../lib/libmpid.${SOEXT} mpi_wrapper.o mpi.o -L${DMDDIR} ${PHOBOSLIB}
 else 
 	ar -ru ../../lib/libmpid.a mpi_wrapper.o mpi.o
 endif
