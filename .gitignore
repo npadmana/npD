@@ -1,3 +1,7 @@
+# Directories
+lib
+include
+
 # Ignore specialized make.vars
 make.vars
 
