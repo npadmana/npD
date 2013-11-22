@@ -1,0 +1,4 @@
+DMDDIR=/global/homes/n/npadmana/D/dmd2/linux/lib64
+MPICC=mpicc
+DC=dmd
+MPIVERSION=MPICH
