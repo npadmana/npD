@@ -1,3 +1,6 @@
+# Ignore specialized make.vars
+make.vars
+
 # Basic file types
 *.o
 *.x
@@ -5,3 +8,5 @@
 *~
 *.so
 *.dylib
+*.di
+
