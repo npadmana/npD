@@ -2,3 +2,6 @@ DMDDIR=/global/homes/n/npadmana/D/dmd2/linux/lib64
 MPICC=cc
 DC=dmd
 MPIVERSION=MPICH
+SOEXT=so
+SOFLAG=
+BUILDSHARED=1

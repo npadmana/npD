@@ -2,3 +2,5 @@ DMDDIR=/Users/npadmana/D/dmd2/osx/lib
 MPICC=mpicc
 DC=dmd
 MPIVERSION=OMPI
+SOEXT=dylib
+SOFLAG=-dynamiclib
