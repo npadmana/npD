@@ -1,0 +1,7 @@
+# Basic file types
+*.o
+*.x
+*.a
+*~
+*.so
+*.dylib
