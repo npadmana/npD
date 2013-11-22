@@ -2,6 +2,8 @@
 
 #ifdef OPEN_MPI
 typedef void* opaque; 
+#elif MPICH
+typedef int opaque;
 #endif
 
 // We use a single opaque type for MPI_Comm, MPI_Op, and MPI_Datatype etc

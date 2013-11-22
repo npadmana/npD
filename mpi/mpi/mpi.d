@@ -1,7 +1,10 @@
 module mpi;
 
 version(OMPI) {
-	alias void* MPI_Opaque; // Defined for covenience
+	alias void* MPI_Opaque; 
+}
+version(MPICH) {
+	alias int MPI_Opaque; 
 }
 
 extern (C) {
