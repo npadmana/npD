@@ -10,12 +10,37 @@ struct BoundingBox {
 
 }
 
+private template isPoint(P) {
+	const isPoint = __traits(compiles, 
+		(P p) {
+			p.x = 0;
+			p.y = 0;
+			p.z = 0;
+			});
+}
+
+unittest {
+	struct WPoint {
+		float x,y,z,w;
+	}
+	struct Point {
+		float x,y,z;
+	}
+	struct NotAPoint {
+		float x,y;
+	}
+	assert(isPoint!Point,"Point should be a point");
+	assert(isPoint!WPoint, "WPoint should be a point");
+	assert(!isPoint!NotAPoint, "NotAPoint should not be a point");
+}
+
+
+
+
 
 // Sort the array along the chosen dimension
 void splitOn(P) (P[] points, Direction dir) 
-	if (is(typeof(points[0].x==0)==bool) && 
-		is(typeof(points[0].y==0)==bool) &&
-		is(typeof(points[0].z==0)==bool) ) 
+	if (isPoint!P) 
 {
 	auto nel = points.length;
 	if (nel==0) throw new Exception("Cannot split a zero element array");	
@@ -48,9 +73,7 @@ unittest {
 
 // Get the bounding box for the array, as a minimum and box length
 BoundingBox getBoundingBox(P) (P[] points) 
-	if (is(typeof(points[0].x==0)==bool) && 
-		is(typeof(points[0].y==0)==bool) &&
-		is(typeof(points[0].z==0)==bool) ) 
+	if (isPoint!P)
 {
 	BoundingBox b;
 	double xmin,ymin,zmin,xmax,ymax,zmax;
@@ -94,16 +117,13 @@ BoundingBox getBoundingBox(P) (P[] points)
 
 
 
-class KDNode(P) {
+class KDNode(P) if (isPoint!P) {
 	uint id;
 	P[] arr;
 	BoundingBox box;
 	KDNode left, right;
 
 	this(P)(P[] points, double minLength=0, uint minPart=1, uint id=0, bool buildTree=true) 
-	if (is(typeof(points[0].x==0)==bool) && 
-		is(typeof(points[0].y==0)==bool) &&
-		is(typeof(points[0].z==0)==bool) ) 
 	{
 		auto nel = arr.length;
 		if (nel==0) throw new Exception("Cannot build around zero element array");
