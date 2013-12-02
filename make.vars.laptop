@@ -1,5 +1,6 @@
 DMDDIR=/Users/npadmana/D/dmd2/osx/lib
 MPICC=mpicc
+CC=gcc
 DC=dmd
 MPIVERSION=OMPI
 SOEXT=dylib

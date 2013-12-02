@@ -1,5 +1,6 @@
 DMDDIR=/global/homes/n/npadmana/D/dmd2/linux/lib
 MPICC=cc
+CC=cc
 DC=dmd
 MPIVERSION=MPICH
 SOEXT=so
