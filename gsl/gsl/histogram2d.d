@@ -1,8 +1,18 @@
 module gsl.histogram2d; 
 
 // Opaque structures for now
-alias struct gsl_histogram2d;
-alias struct gsl_histogram2d_pdf;
+extern(C) struct gsl_histogram2d {
+  size_t nx, ny;
+  double* xrange;
+  double* yrange;
+  double* bin;
+};
+extern(C) struct gsl_histogram2d_pdf {
+  size_t nx, ny;
+  double* xrange;
+  double* yrange;
+  double* sum;
+};
 
 extern(C) {
 /* histogram/gsl_histogram2d.h
