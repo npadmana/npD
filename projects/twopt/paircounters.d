@@ -1,6 +1,6 @@
 module paircounters;
 
-import std.stdio, std.math, std.conv;
+import gsl.histogram2d, std.stdio, std.math, std.conv;
 
 
 private template isWeightedPoint(P) {
@@ -31,8 +31,8 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 	// Define the constructor
 	this(double smax, int ns, int nmu) {
 		// Set up the histogram 
-		//hist = gsl_histogram2d_alloc(ns, nmu);
-		//gsl_histogram2d_set_ranges_uniform(hist, 0, smax, 0, 1.0+1.0e-30); // Make sure 1 falls into the histogram
+		hist = gsl_histogram2d_alloc(ns, nmu);
+		gsl_histogram2d_set_ranges_uniform(hist, 0, smax, 0, 1.0+1.0e-30); // Make sure 1 falls into the histogram
 		this.smax = smax;
 		this.ns = ns;
 		this.nmu = nmu;
@@ -41,14 +41,14 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 		invdmu = nmu;
 		invds = ns/smax;
 		smax2 = smax*smax;
-		hist = new double[ns*nmu];
-		hist[] = 0;
+		//hist = new double[ns*nmu];
+		//hist[] = 0;
 	}
 
 
 	// Destructor
 	~this() {
-		//gsl_histogram2d_free(hist);
+		gsl_histogram2d_free(hist);
 	}
 
 	// Accumulator
@@ -85,10 +85,10 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 				l1 = 1./sqrt(s2*l2); // Really 1/(s*l)
 				mu = sl * l1;
 				if (mu < 0) mu = -mu;
-				imu = cast(int)(invdmu*mu);
-				ins = cast(int)(invds*s1);
-				hist[ins*nmu+imu] += scale*p1.w*p2.w;
-				//gsl_histogram2d_accumulate(hist, s1, mu, scale*p1.w*p2.w);
+				//imu = cast(int)(invdmu*mu);
+				//ins = cast(int)(invds*s1);
+				//hist[ins*nmu+imu] += scale*p1.w*p2.w;
+				gsl_histogram2d_accumulate(hist, s1, mu, scale*p1.w*p2.w);
 
 			}
 		}
@@ -100,28 +100,28 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 
 	// Output to file 
 	void write(File ff) {
-		// Write out the bins in s
-		foreach (b1; 0..ns+1) {
-			ff.writef("%.3f ",b1*ds);
-		}
-		ff.writeln();
-		// Write out the bins in mu
-		foreach (b1; 0..nmu+1) {
-			ff.writef("%.3f ",b1*dmu);
-		}
-		ff.writeln();
-		foreach (i; 0..ns) {
-			foreach (j; 0..nmu) {
-				ff.writef("%25.15e ",hist[i*nmu+j]);
-			}
-			ff.writeln();
-		}
+		//// Write out the bins in s
+		//foreach (b1; 0..ns+1) {
+		//	ff.writef("%.3f ",b1*ds);
+		//}
+		//ff.writeln();
+		//// Write out the bins in mu
+		//foreach (b1; 0..nmu+1) {
+		//	ff.writef("%.3f ",b1*dmu);
+		//}
+		//ff.writeln();
+		//foreach (i; 0..ns) {
+		//	foreach (j; 0..nmu) {
+		//		ff.writef("%25.15e ",hist[i*nmu+j]);
+		//	}
+		//	ff.writeln();
+		//}
 	}
 
 
 
-	private double[] hist;
-	//private gsl_histogram2d* hist;  
+	//private double[] hist;
+	private gsl_histogram2d* hist;  
 	private double smax,smax2, dmu, ds, invdmu, invds;
 	private int nmu, ns;
 }
