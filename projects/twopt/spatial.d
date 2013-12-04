@@ -192,7 +192,7 @@ class KDNode(P) if (isPoint!P) {
 		if (minPart < 1) throw new Exception("minPart cannot be less than 1");	
 		arr = points;
 		box = BoundingBox(points);
-		id = id;
+		this.id = id;
 
 		// Determines when to return
 		if (!buildTree) return;
@@ -249,10 +249,13 @@ unittest {
 	auto root = new KDNode!Point(parr1,0,2);	
 	// Ensure that the array was not copied
 	assert(root.arr is parr1);
+	assert(root.id == 0);
 	assert(root.box.maxdir == Direction.x);
 	assert(!root.isLeaf);
 	assert(root.left.isLeaf);
+	assert(root.left.id == 1);
 	assert(root.right.isLeaf);
+	assert(root.right.id == 2);
 	assert(root.left.arr.length == 2);
 	assert(root.right.arr.length == 2);
 	assert(isSorted!("a.x < b.x")(parr1));
