@@ -1,15 +1,12 @@
 module spatial;
 
 import std.algorithm;
- 
+
+// The three directions -- typesafe 
 enum Direction {x,y,z};
 
-struct BoundingBox {
-	double xcen, ycen, zcen, dx, dy, dz, maxl;
-	Direction maxdir;
 
-}
-
+// Template constraints for 3D points
 private template isPoint(P) {
 	const isPoint = __traits(compiles, 
 		(P p) {
@@ -33,10 +30,6 @@ unittest {
 	assert(isPoint!WPoint, "WPoint should be a point");
 	assert(!isPoint!NotAPoint, "NotAPoint should not be a point");
 }
-
-
-
-
 
 // Sort the array along the chosen dimension
 void splitOn(P) (P[] points, Direction dir) 
@@ -71,49 +64,55 @@ unittest {
 	assert(p1[1]==Point(3,1,2));
 }
 
-// Get the bounding box for the array, as a minimum and box length
-BoundingBox getBoundingBox(P) (P[] points) 
-	if (isPoint!P)
-{
-	BoundingBox b;
-	double xmin,ymin,zmin,xmax,ymax,zmax;
-	xmin = points[0].x; ymin = points[0].y; zmin = points[0].z;
-	xmax = points[0].x; ymax = points[0].y; zmax = points[0].z;
-	foreach (p; points) {
-		if (p.x < xmin) xmin=p.x;
-		if (p.y < ymin) ymin=p.y;
-		if (p.z < zmin) zmin=p.z;
-		if (p.x > xmax) xmax=p.x;
-		if (p.y > ymax) ymax=p.y;
-		if (p.z > zmax) zmax=p.z;
-	}
-	b.xcen = (xmin+xmax)/2;
-	b.ycen = (ymin+ymax)/2;
-	b.zcen = (zmin+zmax)/2;
-	b.dx = xmax - xmin;
-	b.dy = ymax - ymin;
-	b.dz = zmax - zmin;
-	auto maxpos = minPos!("a>b")([b.dx,b.dy,b.dz]);
-	switch (maxpos) {
-		case 0 : 
-			b.maxdir = Direction.x;
-			b.maxl = b.dx;
-			break;
-		case 1 : 
-			b.maxdir = Direction.y;
-			b.maxl = b.dy;
-			break;
-		case 2 : 
-			b.maxdir = Direction.z;
-			b.maxl = b.dz;
-			break;
-		default : break;
+
+
+// The bounding box for a set of particles. We store the center of the box
+// and the size of the box in each dimension. We also compute and store the
+// largest of these and the direction that corresponds to.
+struct BoundingBox {
+	double xcen, ycen, zcen, dx, dy, dz, maxl;
+	Direction maxdir;
+
+	// Get the bounding box for the array
+	this(P) (P[] points) 
+		if (isPoint!P)
+	{
+		double xmin,ymin,zmin,xmax,ymax,zmax;
+		xmin = points[0].x; ymin = points[0].y; zmin = points[0].z;
+		xmax = points[0].x; ymax = points[0].y; zmax = points[0].z;
+		foreach (p; points) {
+			if (p.x < xmin) xmin=p.x;
+			if (p.y < ymin) ymin=p.y;
+			if (p.z < zmin) zmin=p.z;
+			if (p.x > xmax) xmax=p.x;
+			if (p.y > ymax) ymax=p.y;
+			if (p.z > zmax) zmax=p.z;
+		}
+		xcen = (xmin+xmax)/2;
+		ycen = (ymin+ymax)/2;
+		zcen = (zmin+zmax)/2;
+		dx = xmax - xmin;
+		dy = ymax - ymin;
+		dz = zmax - zmin;
+		auto maxpos = minPos!("a>b")([dx,dy,dz]);
+		switch (maxpos) {
+			case 0 : 
+				maxdir = Direction.x;
+				maxl = dx;
+				break;
+			case 1 : 
+				maxdir = Direction.y;
+				maxl = dy;
+				break;
+			case 2 : 
+				maxdir = Direction.z;
+				maxl = dz;
+				break;
+			default : break;
+		}
 	}
 
-	return b;
 }
-
-
 
 
 
@@ -129,7 +128,7 @@ class KDNode(P) if (isPoint!P) {
 		if (nel==0) throw new Exception("Cannot build around zero element array");
 		if (minPart < 1) throw new Exception("minPart cannot be less than 1");	
 		arr = points;
-		box = getBoundingBox(points);
+		box = BoundingBox(points);
 		id = id;
 
 		// Determines when to return
