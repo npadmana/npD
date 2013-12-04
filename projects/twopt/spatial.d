@@ -1,6 +1,6 @@
 module spatial;
 
-import std.algorithm;
+import std.algorithm, std.math;
 
 // The three directions -- typesafe 
 enum Direction {x,y,z};
@@ -94,7 +94,7 @@ struct BoundingBox {
 		dx = xmax - xmin;
 		dy = ymax - ymin;
 		dz = zmax - zmin;
-		auto maxpos = minPos!("a>b")([dx,dy,dz]);
+		auto maxpos = 3 - minPos!("a>b")([dx,dy,dz]).length;
 		switch (maxpos) {
 			case 0 : 
 				maxdir = Direction.x;
@@ -114,6 +114,22 @@ struct BoundingBox {
 
 }
 
+unittest {
+	struct Point {
+		float x,y,z;
+	}
+	auto p1 = [Point(0,0,3), Point(1,0,3), Point(-1,0,0)];
+	auto box=BoundingBox(p1);
+	assert(approxEqual(box.xcen, 0));
+	assert(approxEqual(box.ycen, 0));
+	assert(approxEqual(box.zcen, 1.5));
+	assert(approxEqual(box.dx,2));
+	assert(approxEqual(box.dy,0));
+	assert(approxEqual(box.dz,3));
+	assert(box.maxdir == Direction.z);
+}
+
+
 
 
 class KDNode(P) if (isPoint!P) {
@@ -124,7 +140,7 @@ class KDNode(P) if (isPoint!P) {
 
 	this(P)(P[] points, double minLength=0, uint minPart=1, uint id=0, bool buildTree=true) 
 	{
-		auto nel = arr.length;
+		auto nel = points.length;
 		if (nel==0) throw new Exception("Cannot build around zero element array");
 		if (minPart < 1) throw new Exception("minPart cannot be less than 1");	
 		arr = points;
@@ -132,15 +148,45 @@ class KDNode(P) if (isPoint!P) {
 		id = id;
 
 		// Determines when to return
-		if (!buildtree) return;
+		if (!buildTree) return;
 		if (nel < minPart) return;
-		if (box.maxLength < minLength) return;
+		if (box.maxl < minLength) return;
 
 		// Subdivide the tree
-		splitOn(arr, b.maxdir);
+		splitOn(arr, box.maxdir);
 		auto pos = nel/2;
-		left = KDNode(arr[0..pos], minLength, minPart, 2*id+1, true);
-		right = KDNode(arr[pos..$], minLength, minPart, 2*id+2, true);
+		left = new KDNode(arr[0..pos], minLength, minPart, 2*id+1, true);
+		right = new KDNode(arr[pos..$], minLength, minPart, 2*id+2, true);
+	}
+
+	@property bool isLeaf() {
+		return (left is null) && (right is null);
 	}
 }
+
+
+
+unittest {
+	struct Point {
+		float x,y,z;
+	}
+	auto p1 = [Point(0,0,0), Point(1,0,0), Point(-1,0,0), Point(-2,0,0)];
+	assert(!isSorted!("a.x < b.x")(p1));
+	auto root = new KDNode!Point(p1,2);	
+	// Ensure that the array was not copied
+	assert(root.arr is p1);
+	assert(root.box.maxdir == Direction.x);
+	assert(!root.isLeaf);
+	assert(root.left.isLeaf);
+	assert(root.right.isLeaf);
+	assert(root.left.arr.length == 2);
+	assert(root.right.arr.length == 2);
+	assert(isSorted!("a.x < b.x")(p1));
+}
+
+
+
+
+
+
 
