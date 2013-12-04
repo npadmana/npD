@@ -1,5 +1,10 @@
 include ../../make.vars
 
+smu_ref.x : paircounters.d spatial.d smu_ref.d
+	${DC} -O -c -I../../include/ paircounters.d spatial.d smu_ref.d
+	${CC} -o smu_ref.x paircounters.o spatial.o smu_ref.o -L${GSL_DIR}/lib -lgsl -lgslcblas -L../../lib -lgsld -L${DMDDIR} ${PHOBOSLIB}
+
+
 unittests : testspatial testpairs
 
 testspatial :

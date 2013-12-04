@@ -89,6 +89,29 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 		return gsl_histogram2d_get(hist, i, j);
 	}
 
+	// Overload +=
+	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="+") {
+		gsl_histogram2d_add(hist, rhs.hist);
+		return this;
+	} 
+
+	// Overload -=
+	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="-") {
+		gsl_histogram2d_sub(hist, rhs.hist);
+		return this;
+	} 
+
+	// Get the maximum value of the histogram
+	@property double max() {
+		return gsl_histogram2d_max_val(hist);
+	}
+
+	// Get the minimum value of the histogram
+	@property double min() {
+		return gsl_histogram2d_min_val(hist);
+	}
+
+
 	// Output to file 
 	void write(File ff) {
 		// Write out the bins in s
@@ -132,7 +155,14 @@ unittest {
 	pp.accumulate(p2,p2,2);
 	pp.write(stdout);
 	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));
-	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));
+	assert(approxEqual(pp[2,0],12,1.0e-5,1.0e-10));
+
+	// Test subtraction and addition
+	pp += pp;
+	assert(approxEqual(pp[2,0],24,1.0e-5,1.0e-10));
+	pp -= pp;
+	assert(approxEqual(pp.min, 0.0));
+	assert(approxEqual(pp.max, 0.0));
 }
 
 
