@@ -55,8 +55,11 @@ void main(string[] args) {
 	sw.stop();
 	writefln("Minimum tree1 = %s, Maximum tree1 = %s",tree1.min, tree1.max);
 	writefln("Elapsed time (in msec): %s",sw.peek.msecs);
-	ref1 -= tree1;
-	writefln("---> Minimum diff = %s, Maximum diff = %s",ref1.min, ref1.max);
+	
+	ref1 += 1.0e-15;
+	tree1 += 1.0e-15;
+	ref1 /= tree1;
+	writefln("---> Minimum ratio = %s, Maximum ratio = %s",ref1.min, ref1.max);
 
 
 	////// TEST CROSS-CORRELATIONS
@@ -79,8 +82,11 @@ void main(string[] args) {
 	sw.stop();
 	writefln("Minimum tree1 = %s, Maximum tree1 = %s",tree1.min, tree1.max);
 	writefln("Elapsed time (in msec): %s",sw.peek.msecs);
-	ref1 -= tree1;
-	writefln("---> Minimum diff = %s, Maximum diff = %s",ref1.min, ref1.max);
+
+	ref1 += 1.0e-15;
+	tree1 += 1.0e-15;
+	ref1 /= tree1;
+	writefln("---> Minimum ratio = %s, Maximum ratio = %s",ref1.min, ref1.max);
 
 
 }

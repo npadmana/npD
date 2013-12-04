@@ -112,11 +112,32 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 		return this;
 	} 
 
+	// Overload += for double
+	ref SMuPairCounter!P opOpAssign(string op) (double rhs) if (op=="+") {
+		gsl_histogram2d_shift(hist, rhs);
+		return this;
+	} 
+
+
+
 	// Overload -=
 	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="-") {
 		gsl_histogram2d_sub(hist, rhs.hist);
 		return this;
 	} 
+
+	// Overload *=
+	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="*") {
+		gsl_histogram2d_mul(hist, rhs.hist);
+		return this;
+	} 
+
+	// Overload /=
+	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="/") {
+		gsl_histogram2d_div(hist, rhs.hist);
+		return this;
+	} 
+
 
 	// Get the maximum value of the histogram
 	@property double max() {
