@@ -1,5 +1,10 @@
 include ../../make.vars
 
+smu_test_mt.x : paircounters.d spatial.d smu_test_mt.d
+	${DC} -O -c -I../../include/ paircounters.d spatial.d smu_test_mt.d
+	${CC} ${LFLAGS} -o smu_test_mt.x paircounters.o spatial.o smu_test_mt.o -L${GSL_DIR}/lib -lgsl -lgslcblas -L../../lib -lgsld -L${DMDDIR} ${PHOBOSLIB}
+
+
 smu_test_optimize1.x : paircounters.d spatial.d smu_test_optimize1.d
 	${DC} -O -c -I../../include/ paircounters.d spatial.d smu_test_optimize1.d
 	${CC} ${LFLAGS} -o smu_test_optimize1.x paircounters.o spatial.o smu_test_optimize1.o -L${GSL_DIR}/lib -lgsl -lgslcblas -L../../lib -lgsld -L${DMDDIR} ${PHOBOSLIB}

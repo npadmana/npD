@@ -12,12 +12,9 @@ void main(string[] args) {
 	auto nmu = 25;
 	auto ns = 20;
 	auto smax = 20;
-	int nel;
-	if (args.length < 2) {
-		nel = 1000;
-	} else {	
-		nel = to!int(args[1]);
-	}
+	if (args.length < 3) throw new Exception("Expected two parameters -- nel nworkers");
+	auto nel = to!int(args[1]);
+	auto nworkers = to!int(args[2]); 
 
 	writefln("Working with nel=%s elements", nel);
 
@@ -32,21 +29,18 @@ void main(string[] args) {
 	auto tree1 = new SMuPairCounter!Particle(smax, ns, nmu);
 	auto tree2 = new SMuPairCounter!Particle(smax, ns, nmu);
 
-	////// TEST AUTO-CORRELATIONS
-
 	// Build the tree
 	auto root = new KDNode!Particle(parr, 0, 50);
-	auto root2 = new KDNode!Particle(parr, 0, 50);
 	sw.reset();
 	sw.start();
-	tree1.accumulate!minmaxDist(root, root2);
+	tree1.accumulate!minmaxDist(root, root);
 	sw.stop();
 	writefln("Minimum tree1 = %s, Maximum tree1 = %s",tree1.min, tree1.max);
 	writefln("Elapsed time (in msec): %s",sw.peek.msecs);
 	
 	sw.reset();
 	sw.start();
-	tree2.accumulate!minmaxDist(root, root);
+	tree2.accumulateParallel!minmaxDist(root, root, nworkers);
 	sw.stop();
 	writefln("Minimum tree2 = %s, Maximum tree2 = %s",tree2.min, tree2.max);
 	writefln("Elapsed time (in msec): %s",sw.peek.msecs);
@@ -55,7 +49,7 @@ void main(string[] args) {
 	tree1 += 1.0e-15;
 	tree2 += 1.0e-15;
 	tree1 /= tree2;
-	writefln("---> Minimum ratio = %s, Maximum ratio = %s",tree1.min, tree1.max);
+	writefln("---> Minimum ratio-1 = %e, Maximum ratio-1 = %e",tree1.min-1, tree1.max-1);
 
 
 }

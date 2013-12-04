@@ -1,6 +1,6 @@
 module paircounters;
 
-import std.stdio, std.math, std.conv;
+import std.stdio, std.math, std.conv, std.parallelism;
 import gsl.histogram2d, spatial;
 
 // Template constraint for the paircounter
@@ -23,6 +23,13 @@ unittest {
 	}
 	assert(isWeightedPoint!WPoint, "WPoint should be a weighted point");
 	assert(!isWeightedPoint!NotAWPoint, "NotAWPoint should not be a weighted point");
+}
+
+
+// This is a helper function for parallel accumulates
+void parallelAccHelper(H, P)(H store, P[] arr1, P[] arr2, double scale) {
+	auto me = store.get();
+	me.accumulate(arr1, arr2, scale);
 }
 
 
@@ -96,6 +103,35 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 			} else {
 				accumulate(a1.arr, b1.arr, 1);
 			}
+		}
+	}
+
+
+	// Accumulate in parallel
+	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers) {
+		// Create a new taskPool
+		auto pool = new TaskPool(nworkers);
+		auto histarr = taskPool.workerLocalStorage(new SMuPairCounter!P(smax,ns,nmu));
+		double scale;
+
+
+		auto isauto = a is b;  // Auto-correlations
+		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
+		foreach(a1, b1; walker) {
+			if (isauto && (a1.id > b1.id)) continue;
+			if (isauto && (a1.id < b1.id)) {
+				scale = 2;
+			} else {
+				scale = 1;
+			}
+			auto t = task!(parallelAccHelper!(typeof(histarr),P))(histarr, a1.arr, b1.arr, scale);
+			pool.put(t);
+		}
+
+		pool.finish(true);
+
+		foreach (h1; histarr.toRange) {
+			this += h1;
 		}
 	}
 
