@@ -74,7 +74,7 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 				sl += s1*l1;
 
 				// Simple optimization here -- throw out self pairs
-				if ((s2 >= smax2) || (s2 < 1.0e-10)) continue;
+				if ((s2 >= smax2) || (s2 < 1.0e-50)) continue;
 
 				s1 = sqrt(s2);
 				mu = sl / (s1*sqrt(l2));
