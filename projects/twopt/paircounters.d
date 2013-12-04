@@ -32,7 +32,7 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 	this(double smax, int ns, int nmu) {
 		// Set up the histogram 
 		hist = gsl_histogram2d_alloc(ns, nmu);
-		gsl_histogram2d_set_ranges_uniform(hist, 0.0, smax, 0, 1.0+1.0e-30); // Make sure 1 falls into the histogram
+		gsl_histogram2d_set_ranges_uniform(hist, 0.0, smax, 0, 1.0+1.0e-10); // Make sure 1 falls into the histogram
 		this.smax = smax;
 		this.ns = ns;
 		this.nmu = nmu;
@@ -46,7 +46,7 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 	}
 
 	// Accumulator
-	void accumulate(P) (P[] arr1, P[] arr2, double scale) {
+	void accumulate(P) (P[] arr1, P[] arr2, double scale=1) {
 		double s1, l1, s2, l2, sl, mu;
 		int imu, ins;
 		foreach (p1; arr1) {
@@ -73,7 +73,7 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 				sl += s1*l1;
 
 				// Simple optimization here -- throw out self pairs
-				if ((s2 >= smax2) || (s2 < 1.0e-30)) continue;
+				if ((s2 >= smax2) || (s2 < 1.0e-10)) continue;
 
 				s1 = sqrt(s2);
 				mu = sl / (s1*sqrt(l2));
@@ -98,7 +98,7 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 			ff.writef("%.3f ",lo);
 		}
 		ff.writefln("%.3f",hi);
-		foreach (i; 0..ns) {
+		foreach (i; 0..nmu) {
 			gsl_histogram2d_get_yrange(hist, i, &lo, &hi);
 			ff.writef("%.3f ",lo);
 		}
@@ -117,4 +117,28 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 	private gsl_histogram2d* hist;  
 	private double smax,smax2;
 	private int nmu, ns;
+}
+
+unittest {
+	struct Particle {
+		double x, y, z, w;
+	}
+	auto pp = new SMuPairCounter!Particle(10, 5, 4);
+	auto p1 = [Particle(1,1,1,1.5), Particle(2,2,2,2)];
+	pp.accumulate(p1,p1);
+	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));
+	assert(approxEqual(pp[0,3],6,1.0e-5,1.0e-10));
+	auto p2 = [Particle(-2.5,1,0,1), Particle(2.5,1,0,3)];
+	pp.accumulate(p2,p2,2);
+	pp.write(stdout);
+	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));
+	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));
+}
+
+
+
+version(TESTMAIN) {
+	void main() {
+		writeln("Unittesting!");
+	}
 }
