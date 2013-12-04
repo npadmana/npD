@@ -2,7 +2,7 @@ module paircounters;
 
 import gsl.histogram2d, std.stdio, std.math, std.conv;
 
-
+// Template constraint for the paircounter
 private template isWeightedPoint(P) {
 	const isWeightedPoint = __traits(compiles, 
 		(P p) {
