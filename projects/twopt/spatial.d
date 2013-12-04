@@ -16,6 +16,16 @@ private template isPoint(P) {
 			});
 }
 
+private template isBoundingBoxDist(alias dist) {
+	const isBoundingBoxDist = __traits(compiles, 
+		{
+			BoundingBox a, b;
+			auto res = dist(a,b);
+			double x = res[0]; 
+			x = res[1];
+		});
+}
+
 unittest {
 	struct WPoint {
 		float x,y,z,w;
@@ -128,7 +138,6 @@ unittest {
 	assert(box.maxdir == Direction.z);
 }
 
-
 Tuple!(double, double) minmaxDist(BoundingBox a, BoundingBox b) {
 	double _min=0.0, _max=0.0;
 	double dcen, dx;
@@ -153,8 +162,13 @@ Tuple!(double, double) minmaxDist(BoundingBox a, BoundingBox b) {
 	return tuple(sqrt(_min), sqrt(_max));
 }
 
+
 unittest {
-	BoundingBox a, b;
+	static assert(isBoundingBoxDist!(minmaxDist));
+}
+
+unittest {
+	BoundingBox a,b;
 	a.xcen = 0; a.ycen = 0; a.zcen=0;
 	a.dx = 0.5, a.dy=0.5, a.dz=0.5;
 	b.xcen = 1; b.ycen = 1; b.zcen=1;
@@ -267,6 +281,63 @@ unittest {
 
 
 
+struct DualTreeWalk(alias dist, P)
+	if (isBoundingBoxDist!dist) 
+{
+	KDNode!P a, b;
+	double slo=double.max, shi=-double.max;
+
+	this(P) (KDNode!P a, KDNode!P b, double slo, double shi) {
+		this.a = a;
+		this.b = b;
+		this.slo = slo; 
+		this.shi = shi;
+	} 
+
+	int opApply(int delegate(KDNode!P a, KDNode!P b) dg) {
+		auto res = dist(a.box,b.box);
+
+		// Prune
+		if (res[0] >= shi) return 0;
+		if (res[1] < slo) return 0;
+
+		// If the node if completely contained, open and proceed
+		if ((slo <= res[0]) && (res[1] < shi)) return dg(a,b);
+
+		// If nodes are both leaves
+		if (a.isLeaf && b.isLeaf) return dg(a,b);
+
+		// If one is a leaf
+		if (a.isLeaf) {
+			auto retval = DualTreeWalk!(dist,P)(a, b.left, slo, shi).opApply(dg);
+			if (retval) return retval;
+			retval = DualTreeWalk!(dist,P)(a, b.right, slo, shi).opApply(dg);
+			return retval;
+		}
+
+		if (b.isLeaf) {
+			auto retval = DualTreeWalk!(dist,P)(a.left, b, slo, shi).opApply(dg);
+			if (retval) return retval;
+			retval = DualTreeWalk!(dist,P)(a.right, b, slo, shi).opApply(dg);
+			return retval;
+		}
+
+		// If neither are leaves, pick the bigger one to split
+		if (a.arr.length > b.arr.length) {
+			auto retval = DualTreeWalk!(dist,P)(a.left, b, slo, shi).opApply(dg);
+			if (retval) return retval;
+			retval = DualTreeWalk!(dist,P)(a.right, b, slo, shi).opApply(dg);
+			return retval;
+		} else {
+			auto retval = DualTreeWalk!(dist,P)(a, b.left, slo, shi).opApply(dg);
+			if (retval) return retval;
+			retval = DualTreeWalk!(dist,P)(a, b.right, slo, shi).opApply(dg);
+			return retval;
+		}
+
+		return 0;
+	}
+}
 
 
 

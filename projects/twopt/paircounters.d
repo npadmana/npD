@@ -1,6 +1,7 @@
 module paircounters;
 
-import gsl.histogram2d, std.stdio, std.math, std.conv;
+import std.stdio, std.math, std.conv;
+import gsl.histogram2d, spatial;
 
 // Template constraint for the paircounter
 private template isWeightedPoint(P) {
@@ -84,6 +85,22 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 		}
 	}
 
+	// Tree accumulate 
+	void accumulate(alias dist, P) (KDNode!P a, KDNode!P b) {
+		auto isauto = a is b;  // Auto-correlations
+		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
+		foreach(a1, b1; walker) {
+			if (isauto && (a1.id > b1.id)) continue;
+			if (isauto && (a1.id < b1.id)) {
+				accumulate(a1.arr, b1.arr, 2);
+			} else {
+				accumulate(a1.arr, b1.arr, 1);
+			}
+		}
+	}
+
+
+
 	// Overload index
 	double opIndex(int i, int j) {
 		return gsl_histogram2d_get(hist, i, j);
@@ -109,6 +126,11 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 	// Get the minimum value of the histogram
 	@property double min() {
 		return gsl_histogram2d_min_val(hist);
+	}
+
+	// Reset the histogram
+	void reset() {
+		gsl_histogram2d_reset(hist);
 	}
 
 
