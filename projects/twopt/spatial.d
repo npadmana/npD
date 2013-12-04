@@ -1,6 +1,6 @@
 module spatial;
 
-import std.algorithm, std.range, std.math, std.random, std.stdio;
+import std.algorithm, std.range, std.math, std.random, std.stdio, std.typecons, std.stdio;
 
 // The three directions -- typesafe 
 enum Direction {x,y,z};
@@ -111,7 +111,6 @@ struct BoundingBox {
 			default : break;
 		}
 	}
-
 }
 
 unittest {
@@ -129,6 +128,41 @@ unittest {
 	assert(box.maxdir == Direction.z);
 }
 
+
+Tuple!(double, double) minmaxDist(BoundingBox a, BoundingBox b) {
+	double _min=0.0, _max=0.0;
+	double dcen, dx;
+	// x
+	dcen = fabs(a.xcen-b.xcen);
+	dx = (a.dx + b.dx)*0.5;
+	if (dcen > dx) _min += (dcen-dx)^^2;
+	_max += (dcen+dx)^^2;
+
+	// y
+	dcen = fabs(a.ycen-b.ycen);
+	dx = (a.dy + b.dy)*0.5;
+	if (dcen > dx) _min += (dcen-dx)^^2;
+	_max += (dcen+dx)^^2;
+
+	// z
+	dcen = fabs(a.zcen-b.zcen);
+	dx = (a.dz + b.dz)*0.5;
+	if (dcen > dx) _min += (dcen-dx)^^2;
+	_max += (dcen+dx)^^2;
+
+	return tuple(sqrt(_min), sqrt(_max));
+}
+
+unittest {
+	BoundingBox a, b;
+	a.xcen = 0; a.ycen = 0; a.zcen=0;
+	a.dx = 0.5, a.dy=0.5, a.dz=0.5;
+	b.xcen = 1; b.ycen = 1; b.zcen=1;
+	b.dx = 0.5, b.dy=0.5, b.dz=0.5;
+	auto res = minmaxDist(a, b);
+	assert(approxEqual(res[0],sqrt(3.0)*0.5), "Min dist fails");
+	assert(approxEqual(res[1],sqrt(3.0)*1.5), "Max dist fails");
+}
 
 
 
