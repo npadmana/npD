@@ -32,17 +32,11 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 	this(double smax, int ns, int nmu) {
 		// Set up the histogram 
 		hist = gsl_histogram2d_alloc(ns, nmu);
-		gsl_histogram2d_set_ranges_uniform(hist, 0, smax, 0, 1.0+1.0e-30); // Make sure 1 falls into the histogram
+		gsl_histogram2d_set_ranges_uniform(hist, 0.0, smax, 0, 1.0+1.0e-30); // Make sure 1 falls into the histogram
 		this.smax = smax;
 		this.ns = ns;
 		this.nmu = nmu;
-		dmu = 1./nmu;
-		ds = smax/ns;
-		invdmu = nmu;
-		invds = ns/smax;
 		smax2 = smax*smax;
-		//hist = new double[ns*nmu];
-		//hist[] = 0;
 	}
 
 
@@ -82,46 +76,45 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 				if ((s2 >= smax2) || (s2 < 1.0e-30)) continue;
 
 				s1 = sqrt(s2);
-				l1 = 1./sqrt(s2*l2); // Really 1/(s*l)
-				mu = sl * l1;
+				mu = sl / (s1*sqrt(l2));
 				if (mu < 0) mu = -mu;
-				//imu = cast(int)(invdmu*mu);
-				//ins = cast(int)(invds*s1);
-				//hist[ins*nmu+imu] += scale*p1.w*p2.w;
 				gsl_histogram2d_accumulate(hist, s1, mu, scale*p1.w*p2.w);
 
 			}
 		}
 	}
 
-	// Overload add 
-
-
+	// Overload index
+	double opIndex(int i, int j) {
+		return gsl_histogram2d_get(hist, i, j);
+	}
 
 	// Output to file 
 	void write(File ff) {
-		//// Write out the bins in s
-		//foreach (b1; 0..ns+1) {
-		//	ff.writef("%.3f ",b1*ds);
-		//}
-		//ff.writeln();
-		//// Write out the bins in mu
-		//foreach (b1; 0..nmu+1) {
-		//	ff.writef("%.3f ",b1*dmu);
-		//}
-		//ff.writeln();
-		//foreach (i; 0..ns) {
-		//	foreach (j; 0..nmu) {
-		//		ff.writef("%25.15e ",hist[i*nmu+j]);
-		//	}
-		//	ff.writeln();
-		//}
+		// Write out the bins in s
+		double lo, hi;
+		foreach (i; 0..ns) {
+			gsl_histogram2d_get_xrange(hist, i, &lo, &hi);
+			ff.writef("%.3f ",lo);
+		}
+		ff.writefln("%.3f",hi);
+		foreach (i; 0..ns) {
+			gsl_histogram2d_get_yrange(hist, i, &lo, &hi);
+			ff.writef("%.3f ",lo);
+		}
+		ff.writefln("%.3f",hi);
+		foreach (i; 0..ns) {
+			foreach (j; 0..nmu) {
+				ff.writef("%25.15e ", this[i,j]);
+			}
+			ff.writeln();
+		}
 	}
 
 
 
 	//private double[] hist;
 	private gsl_histogram2d* hist;  
-	private double smax,smax2, dmu, ds, invdmu, invds;
+	private double smax,smax2;
 	private int nmu, ns;
 }
