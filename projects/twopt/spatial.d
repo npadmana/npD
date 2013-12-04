@@ -1,6 +1,6 @@
 module spatial;
 
-import std.algorithm, std.math;
+import std.algorithm, std.range, std.math, std.random, std.stdio;
 
 // The three directions -- typesafe 
 enum Direction {x,y,z};
@@ -136,7 +136,6 @@ class KDNode(P) if (isPoint!P) {
 	uint id;
 	P[] arr;
 	BoundingBox box;
-	KDNode left, right;
 
 	this(P)(P[] points, double minLength=0, uint minPart=1, uint id=0, bool buildTree=true) 
 	{
@@ -149,40 +148,89 @@ class KDNode(P) if (isPoint!P) {
 
 		// Determines when to return
 		if (!buildTree) return;
-		if (nel < minPart) return;
+		if (nel <= minPart) return;
 		if (box.maxl < minLength) return;
 
 		// Subdivide the tree
 		splitOn(arr, box.maxdir);
 		auto pos = nel/2;
-		left = new KDNode(arr[0..pos], minLength, minPart, 2*id+1, true);
-		right = new KDNode(arr[pos..$], minLength, minPart, 2*id+2, true);
+		_left = new KDNode(arr[0..pos], minLength, minPart, 2*id+1, true);
+		_right = new KDNode(arr[pos..$], minLength, minPart, 2*id+2, true);
 	}
 
+	// Test if leaf or not
 	@property bool isLeaf() {
 		return (left is null) && (right is null);
 	}
+
+	@property KDNode left() {
+		return _left;
+	}
+
+	@property KDNode right() {
+		return _right;
+	}
+
+	// opApply -- directly from TDPL ("Overloading foreach")
+	int opApply(int delegate(KDNode!P node) dg) {
+		auto result = dg(this);
+		if (result) return result;
+		if (_left) {
+			result = _left.opApply(dg);
+			if (result) return result;
+		}
+		if (_right) {
+			result = _right.opApply(dg);
+			if (result) return result;
+		}
+		return 0;
+	}
+
+	private KDNode _left, _right;
+
 }
 
 
 
 unittest {
 	struct Point {
-		float x,y,z;
+		float x=0,y=0,z=0;
 	}
-	auto p1 = [Point(0,0,0), Point(1,0,0), Point(-1,0,0), Point(-2,0,0)];
-	assert(!isSorted!("a.x < b.x")(p1));
-	auto root = new KDNode!Point(p1,2);	
+	auto parr1 = [Point(0,0,0), Point(1,0,0), Point(-1,0,0), Point(-2,0,0)];
+	assert(!isSorted!("a.x < b.x")(parr1));
+	auto root = new KDNode!Point(parr1,0,2);	
 	// Ensure that the array was not copied
-	assert(root.arr is p1);
+	assert(root.arr is parr1);
 	assert(root.box.maxdir == Direction.x);
 	assert(!root.isLeaf);
 	assert(root.left.isLeaf);
 	assert(root.right.isLeaf);
 	assert(root.left.arr.length == 2);
 	assert(root.right.arr.length == 2);
-	assert(isSorted!("a.x < b.x")(p1));
+	assert(isSorted!("a.x < b.x")(parr1));
+	parr1 = new Point[3561];
+	foreach (ref p1; parr1) {
+		p1.y = uniform(0.0,100.0);
+	}
+	root = new KDNode!Point(parr1,0,1);
+	assert(root.arr is parr1);
+	assert(isSorted!("a.y < b.y")(parr1));
 }
+
+
+unittest {
+	struct Point {
+		float x=0,y=0,z=0;
+	}
+	auto parr = map!((x)=>Point(uniform(0.0,100.0),uniform(0.0,100.0), uniform(0.0,100.0)))(iota(12345)).array;
+	auto root = new KDNode!Point(parr);
+	int nel = 0;
+	foreach (kd; root) {
+		if (kd.isLeaf) nel += kd.arr.length;
+	}
+	assert(nel==parr.length); 
+}
+
 
 
 
