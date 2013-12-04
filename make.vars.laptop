@@ -5,5 +5,5 @@ DC=dmd
 MPIVERSION=OMPI
 SOEXT=dylib
 SOFLAG=-dynamiclib
-LFLAGS=-dynamic
+LFLAGS=
 PHOBOSLIB=-lphobos2 

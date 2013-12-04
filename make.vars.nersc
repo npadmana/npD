@@ -5,6 +5,6 @@ DC=dmd
 MPIVERSION=MPICH
 SOEXT=so
 SOFLAG=-shared
-
+LDFLAGS=-dynamic
 PHOBOSLIB=-lphobos2 -lssl
 BUILDSHARED=1
