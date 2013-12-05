@@ -1,4 +1,5 @@
 DMDDIR=/global/homes/n/npadmana/D/dmd2/linux/lib
+NPD_DIR=/global/homes/n/npadmana/D/npD
 MPICC=cc
 CC=cc
 DC=dmd

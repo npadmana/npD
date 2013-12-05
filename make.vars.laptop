@@ -1,4 +1,5 @@
 DMDDIR=/Users/npadmana/D/dmd2/osx/lib
+NPD_DIR=/Users/npadmana/D/npD
 MPICC=mpicc
 CC=gcc
 DC=dmd
