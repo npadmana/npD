@@ -34,6 +34,11 @@ class IniFile {
 		return to!T(ini[param]);
 	}
 
+	// Check for the existence of a key
+	bool test(string param) {
+		return !((param in ini) is null);
+	}
+
 	private string[string] ini;
 }
 
@@ -44,4 +49,6 @@ unittest {
 	assert(ini.get!(int[])("test4")==[3,42,5]);
 	assert(ini.get!(string[])("test2")==["Hello","world!"]);
 	assert(ini.get!(int[])("arr")==[1,2,3,4,5]);
+	assert(ini.test("test4"));
+	assert(!ini.test("notakey"));
 }
