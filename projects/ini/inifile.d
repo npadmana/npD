@@ -39,6 +39,11 @@ class IniFile {
 		return !((param in ini) is null);
 	}
 
+	// Return keys
+	@property auto keys() {
+		return ini.keys;
+	} 
+
 	private string[string] ini;
 }
 
@@ -51,4 +56,5 @@ unittest {
 	assert(ini.get!(int[])("arr")==[1,2,3,4,5]);
 	assert(ini.test("test4"));
 	assert(!ini.test("notakey"));
+	assert(equal(sort(ini.keys),["arr", "hi", "omega", "test", "test2", "test3", "test4"]));
 }
