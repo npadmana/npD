@@ -1,5 +1,6 @@
-import std.algorithm, std.conv, std.stdio, std.string, std.array, std.traits,std.math;
+module ini;
 
+import std.algorithm, std.conv, std.stdio, std.string, std.array, std.traits,std.math;
 
 // Handler for IniFiles.
 //
