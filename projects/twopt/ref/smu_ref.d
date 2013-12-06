@@ -4,7 +4,7 @@ import std.stdio, std.algorithm, std.random, std.conv, std.range, std.math, std.
 import spatial, paircounters;
 
 struct Particle {
-	double x,y,z,w;
+	double x,y,z,w, x2;
 }
 
 void main(string[] args) {
@@ -32,6 +32,8 @@ void main(string[] args) {
 								uniform(100.0,200.0), 
 								uniform(0.7,1.0)))
 				(iota(nel)).array;
+	setMagnitudePoint(parr);
+	setMagnitudePoint(parr2);
 
 
 	auto ref1 = new SMuPairCounter!Particle(smax, ns, nmu);

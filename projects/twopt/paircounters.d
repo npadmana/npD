@@ -11,12 +11,21 @@ private template isWeightedPoint(P) {
 			p.y = 0;
 			p.z = 0;
 			p.w = 0;
+			p.x2 = 0;
 			});
 }
 
+// Helper function for setting the magnitude of points. 
+void setMagnitudePoint(P)(P[] arr) if (isWeightedPoint!P) {
+	foreach (ref p1; arr) {
+		p1.x2 = (p1.x*p1.x + p1.y*p1.y + p1.z*p1.z);
+	}
+}
+
+
 unittest {
 	struct WPoint {
-		float x,y,z,w;
+		float x,y,z,w,x2;
 	}
 	struct NotAWPoint {
 		float x,y,z;
@@ -67,7 +76,7 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 	}
 
 	// Accumulator
-	void accumulate(P) (P[] arr1, P[] arr2, double scale=1) {
+	void accumulate_reference(P) (P[] arr1, P[] arr2, double scale=1) {
 		double s1, l1, s2, l2, sl, mu;
 		int imu, ins;
 		foreach (p1; arr1) {
@@ -105,8 +114,8 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 		}
 	}
 
-	// Accumulator -- with many optimizations
-	void accumulate_v2(X) (X[] arr1, X[] arr2, double scale=1) {
+	// Accumulator, optimized
+	void accumulate(P) (P[] arr1, P[] arr2, double scale=1) {
 		double s1, l1, s2, l2, sl, mu;
 		int imu, ins;
 		foreach (p1; arr1) {
@@ -268,14 +277,16 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 
 unittest {
 	struct Particle {
-		double x, y, z, w;
+		double x, y, z, w, x2;
 	}
 	auto pp = new SMuPairCounter!Particle(10, 5, 4);
 	auto p1 = [Particle(1,1,1,1.5), Particle(2,2,2,2)];
+	setMagnitudePoint(p1);
 	pp.accumulate(p1,p1);
 	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));
 	assert(approxEqual(pp[0,3],6,1.0e-5,1.0e-10));
 	auto p2 = [Particle(-2.5,1,0,1), Particle(2.5,1,0,3)];
+	setMagnitudePoint(p2);
 	pp.accumulate(p2,p2,2);
 	pp.write(stdout);
 	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));

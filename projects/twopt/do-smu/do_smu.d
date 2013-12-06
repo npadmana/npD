@@ -3,9 +3,10 @@ import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string;
 import mpi, ini, spatial, paircounters;
 
 struct Particle {
-	double x,y,z,w;
+	double x,y,z,w,x2;
 	this(double[] arr) {
 		x = arr[0]; y = arr[1]; z=arr[2]; w=arr[3];
+		x2 = x*x + y*y + z*z;
 	}
 }
 

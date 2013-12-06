@@ -2,6 +2,7 @@ include ../../../make.vars
 
 DFILES=../paircounters.d ../spatial.d
 
+all : smu_test_optimize2.x smu_test_optimize1.x smu_ref.x smu_test_mt.x
 
 smu_test_optimize2.x : ${DFILES} smu_test_optimize2.d
 	${DC} -O -c -I${NPD_DIR}/include/ ${DFILES} smu_test_optimize2.d -ofsmu_test_optimize2.o
