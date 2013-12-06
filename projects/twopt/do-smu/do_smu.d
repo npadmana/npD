@@ -2,6 +2,24 @@ import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string, 
 
 import mpi, ini, spatial, paircounters;
 
+struct TriangleRange {
+	int n = 0, count=0; 
+	this(int n) {
+		this.n = n;
+	}
+
+	int opApply(int delegate(int i, int j, int c) dg) {
+		foreach (i;0..n) 
+			foreach (j;0..(i+1)) {
+				auto res = dg(i,j, count);
+				if (res) return(res);
+				count += 1;
+			} 
+		return 0;
+	}
+}
+
+
 struct Particle {
 	double x,y,z,w,x2;
 	this(double[] arr) {
@@ -56,6 +74,7 @@ void main(char[][] args) {
 	Particle[] darr, rarr, darr2, rarr2;
 	Particle[][] dsplit, rsplit;
 	KDNode!Particle root1, root2;
+	string RRfn_save;
 
 	// Loop over jobs
 	bool noRR;
@@ -73,7 +92,12 @@ void main(char[][] args) {
 			writeln("}.dat .....");
 			// Read in D & R
 			darr = readFile(params[0]);
-			rarr = readFile(params[1]);
+			if (params[1]!=RRfn_save) { 
+				rarr = readFile(params[1]);
+			} else {
+				writefln("%s : R repeated... -- reusing", job1);
+			}
+			RRfn_save = params[1];
 
 			writefln("%s : Data read in.....", job1);
 
@@ -105,10 +129,14 @@ void main(char[][] args) {
 		if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1, sw.peek.seconds);
 
 		// DD
-		root1 = new KDNode!Particle(darr,0, minPart);
-		root2 = new KDNode!Particle(dsplit[rank],0,minPart);
 		PP.reset();
-		PP.accumulateParallel!minmaxDist(root1, root2, nworkers);
+		foreach (i, j, c; TriangleRange(size)) {
+			if ((c % size) != rank) continue;
+			double scale = (i==j) ? 1 : 2;
+			root1 = new KDNode!Particle(dsplit[i],0, minPart);
+			root2 = new KDNode!Particle(dsplit[j],0,minPart);
+			PP.accumulateParallel!minmaxDist(root1, root2, nworkers,scale);
+		}
 		PP.mpiReduce(0, MPI_COMM_WORLD);
 		if (rank==0) {
 			PP.write(File(params[2]~"-DD.dat","w"));
@@ -128,10 +156,14 @@ void main(char[][] args) {
 
 		// RR
 		if (noRR) continue;
-		root1 = new KDNode!Particle(rarr,0, minPart);
-		root2 = new KDNode!Particle(rsplit[rank],0,minPart);
 		PP.reset();
-		PP.accumulateParallel!minmaxDist(root1, root2, nworkers);
+		foreach (i, j, c; TriangleRange(size)) {
+			if ((c % size) != rank) continue;
+			double scale = (i==j) ? 1 : 2;
+			root1 = new KDNode!Particle(rsplit[i],0, minPart);
+			root2 = new KDNode!Particle(rsplit[j],0,minPart);
+			PP.accumulateParallel!minmaxDist(root1, root2, nworkers,scale);
+		}
 		PP.mpiReduce(0, MPI_COMM_WORLD);
 		if (rank==0) {
 			PP.write(File(params[2]~"-RR.dat","w"));

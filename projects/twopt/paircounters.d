@@ -195,6 +195,30 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 	}
 
 
+	// Accumulate in parallel
+	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers, double scale) {
+		auto store = new SMuPairCounter!(P)[nworkers+1];
+		foreach (ref h1; store) {
+			h1 = new SMuPairCounter!P(smax, ns, nmu);
+		}
+
+		// Create a new taskPool
+		auto pool = new TaskPool(nworkers);
+
+		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
+		foreach(a1, b1; walker) {
+			auto t = task!(parallelAccHelper!(typeof(store),P))(pool, store, a1.arr, b1.arr, scale);
+			pool.put(t);
+		}
+
+		pool.finish(true);
+
+		foreach (h1; store) {
+			this += h1;
+		}
+	}
+
+
 
 	// Overload index
 	double opIndex(int i, int j) {
