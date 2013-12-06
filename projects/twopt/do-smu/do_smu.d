@@ -10,6 +10,10 @@ struct Particle {
 	}
 }
 
+double sumOfWeights(Particle[] arr) {
+	return reduce!((a,b) => a + b.w)(0.0, arr);
+}
+
 Particle[] readFile(string fn) {
 	auto fin = File(fn);
 	Particle[] parr;
@@ -71,11 +75,16 @@ void main(char[][] args) {
 			darr = readFile(params[0]);
 			rarr = readFile(params[1]);
 
-			writeln("Data read in.....");
+			writefln("%s : Data read in.....", job1);
 
 			randomShuffle(darr);
 			randomShuffle(rarr);
-			writeln("Data shuffled....");
+			writefln("%s : Data shuffled....", job1);
+
+			// Write the norm file here!
+			auto fnorm = File(params[2]~"-norm.dat","w");
+			fnorm.writefln("%s: %20.15e",params[0],sumOfWeights(darr));
+			fnorm.writefln("%s: %20.15e",params[1],sumOfWeights(rarr));
 		}
 
 		// Build trees
