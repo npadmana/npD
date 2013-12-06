@@ -29,15 +29,17 @@ extern (C) {
 // Symbols
 alias MPI_Opaque MPI_Comm;
 alias MPI_Opaque MPI_Datatype;
+alias MPI_Opaque MPI_Op;
 
 struct MPISymbol {
 	string typename;
 	int i;
 }
 
-immutable MPI_SYMBOL_LIST = ["MPI_COMM_WORLD","MPI_CHAR", "MPI_INT", "MPI_LONG","MPI_DOUBLE"];
-immutable MPI_SYMBOL_TYPE = ["MPI_Comm", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype"];
+immutable MPI_SYMBOL_LIST = ["MPI_COMM_WORLD","MPI_CHAR", "MPI_INT", "MPI_LONG","MPI_DOUBLE", "MPI_SUM"];
+immutable MPI_SYMBOL_TYPE = ["MPI_Comm", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype","MPI_Op"];
 
+// Mixin helpers --- we should have a version that just builds the corresponding C function ????
 private string __buildTypeDecl() {
 	string str="";
 	foreach (i, k1 ; MPI_SYMBOL_LIST) {

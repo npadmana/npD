@@ -24,6 +24,7 @@ opaque returnMPIsymbol(int i) {
 		case 2 : return (opaque) MPI_INT;
 		case 3 : return (opaque) MPI_LONG;
 		case 4 : return (opaque) MPI_DOUBLE;
+		case 5 : return (opaque) MPI_SUM;
 	}
 	return 0;
 }
