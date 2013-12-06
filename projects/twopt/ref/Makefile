@@ -2,6 +2,13 @@ include ../../../make.vars
 
 DFILES=../paircounters.d ../spatial.d
 
+
+smu_test_optimize2.x : ${DFILES} smu_test_optimize2.d
+	${DC} -O -c -I${NPD_DIR}/include/ ${DFILES} smu_test_optimize2.d -ofsmu_test_optimize2.o
+	${CC} ${LFLAGS} -o smu_test_optimize2.x smu_test_optimize2.o \
+			-L${GSL_DIR}/lib -lgsl -lgslcblas -L${NPD_DIR}/lib -lgsld -L${DMDDIR} ${PHOBOSLIB}
+
+
 smu_test_mt.x : ${DFILES} smu_test_mt.d
 	${DC} -O -c -I${NPD_DIR}/include ${DFILES} smu_test_mt.d -ofsmu_test_mt.o
 	${CC} ${LFLAGS} -o smu_test_mt.x smu_test_mt.o \

@@ -105,6 +105,31 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 		}
 	}
 
+	// Accumulator -- with many optimizations
+	void accumulate_v2(X) (X[] arr1, X[] arr2, double scale=1) {
+		double s1, l1, s2, l2, sl, mu;
+		int imu, ins;
+		foreach (p1; arr1) {
+			foreach (p2; arr2) {
+				mu = 2*(p1.x*p2.x + p1.y*p2.y + p1.z*p2.z);
+				sl = p1.x2 - p2.x2;
+				l1 = p1.x2 + p2.x2;
+				s2 = l1 - mu;
+				l2 = l1 + mu;
+
+				// Simple optimization here -- throw out self pairs
+				if ((s2 >= smax2) || (s2 < 1.0e-50)) continue;
+
+				s1 = sqrt(s2);
+				mu = sl / (s1*sqrt(l2));
+				if (mu < 0) mu = -mu;
+				gsl_histogram2d_accumulate(hist, s1, mu, scale*p1.w*p2.w);
+
+			}
+		}
+	}
+
+
 	// Tree accumulate 
 	void accumulate(alias dist, P) (KDNode!P a, KDNode!P b) {
 		auto isauto = a is b;
