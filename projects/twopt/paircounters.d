@@ -107,15 +107,26 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 
 	// Tree accumulate 
 	void accumulate(alias dist, P) (KDNode!P a, KDNode!P b) {
+		auto isauto = a is b;
+		double scale;
 		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
 		foreach(a1, b1; walker) {
-			accumulate(a1.arr, b1.arr, 1);
+			if (isauto && (a.id > b.id)) continue;
+			if (isauto && (a.id < b.id)) {
+				scale = 2.0;
+			} else {
+				scale = 1.0;
+			}
+			accumulate(a1.arr, b1.arr, scale);
 		}
 	}
 
 
 	// Accumulate in parallel
 	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers) {
+		auto isauto = a is b;
+		double scale;
+
 		auto store = new SMuPairCounter!(P)[nworkers+1];
 		foreach (ref h1; store) {
 			h1 = new SMuPairCounter!P(smax, ns, nmu);
@@ -123,12 +134,17 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 
 		// Create a new taskPool
 		auto pool = new TaskPool(nworkers);
-		//auto histarr = taskPool.workerLocalStorage(store);
 
 		//auto isauto = a is b;  // Auto-correlations
 		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
 		foreach(a1, b1; walker) {
-			auto t = task!(parallelAccHelper!(typeof(store),P))(pool, store, a1.arr, b1.arr, 1);
+			if (isauto && (a.id > b.id)) continue;
+			if (isauto && (a.id < b.id)) {
+				scale = 2.0;
+			} else {
+				scale = 1.0;
+			}
+			auto t = task!(parallelAccHelper!(typeof(store),P))(pool, store, a1.arr, b1.arr, scale);
 			pool.put(t);
 		}
 

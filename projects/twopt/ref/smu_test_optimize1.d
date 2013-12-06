@@ -27,6 +27,7 @@ void main(string[] args) {
 								uniform(100.0,200.0), 
 								uniform(0.7,1.0)))
 				(iota(nel)).array;
+	auto parr2 = parr.dup;
 
 
 	auto tree1 = new SMuPairCounter!Particle(smax, ns, nmu);
@@ -36,7 +37,7 @@ void main(string[] args) {
 
 	// Build the tree
 	auto root = new KDNode!Particle(parr, 0, 50);
-	auto root2 = new KDNode!Particle(parr, 0, 50);
+	auto root2 = new KDNode!Particle(parr2, 0, 50);
 	sw.reset();
 	sw.start();
 	tree1.accumulate!minmaxDist(root, root2);
@@ -55,7 +56,7 @@ void main(string[] args) {
 	tree1 += 1.0e-15;
 	tree2 += 1.0e-15;
 	tree1 /= tree2;
-	writefln("---> Minimum ratio = %s, Maximum ratio = %s",tree1.min, tree1.max);
+	writefln("---> Minimum ratio-1 = %s, Maximum ratio-1 = %s",tree1.min-1, tree1.max-1);
 
 
 }
