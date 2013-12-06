@@ -116,17 +116,20 @@ void Bcast(T) (ref T[] arr, int root, MPI_Comm comm) {
 
 
 // Split an array 
-T[] Split(T) (T[] arr) {
+T[][] Split(T) (T[] arr, MPI_Comm comm) {
 	int rank, size;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&size);
 	auto nel = arr.length;
 
+	auto ret = new T[][size];
+
 	auto block = nel/size;
-	auto start = rank*block;
-	auto end = start + block;
-	if (end > nel) end = nel;
-	return arr[start..end];
+	foreach (i; 0..size-1) {
+		ret[i] = arr[block*i..block*(i+1)];
+	}
+	ret[size-1] = arr[block*(size-1)..$];
+	return ret;	
 }
 
 

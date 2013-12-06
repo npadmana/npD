@@ -4,6 +4,14 @@ DFILES=../paircounters.d ../spatial.d
 
 all : smu_test_optimize2.x smu_test_optimize1.x smu_ref.x smu_test_mt.x
 
+
+smu_mpi_ref.x : ${DFILES} smu_mpi_ref.d
+	${DC} -O -c -I${NPD_DIR}/include/ ${DFILES} smu_mpi_ref.d -ofsmu_mpi_ref.o -version=MPI -version=${MPIVERSION}
+	${MPICC} ${LFLAGS} -o smu_mpi_ref.x smu_mpi_ref.o \
+			-L${GSL_DIR}/lib -lgsl -lgslcblas -L${NPD_DIR}/lib -lgsld -lmpid -L${DMDDIR} ${PHOBOSLIB}
+
+
+
 smu_test_optimize2.x : ${DFILES} smu_test_optimize2.d
 	${DC} -O -c -I${NPD_DIR}/include/ ${DFILES} smu_test_optimize2.d -ofsmu_test_optimize2.o
 	${CC} ${LFLAGS} -o smu_test_optimize2.x smu_test_optimize2.o \

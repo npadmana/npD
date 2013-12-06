@@ -3,6 +3,11 @@ module paircounters;
 import std.stdio, std.math, std.conv, std.parallelism;
 import gsl.histogram2d, spatial;
 
+// Make an MPI-supported version
+version(MPI) {
+	import mpi;
+}
+
 // Template constraint for the paircounter
 private template isWeightedPoint(P) {
 	const isWeightedPoint = __traits(compiles, 
@@ -267,6 +272,20 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 		}
 	}
 
+
+	version(MPI) {
+		void mpiReduce(int root, MPI_Comm comm) {
+			int rank;
+			rank = MPI_Comm_rank(comm, &rank);
+			if (rank == root) {
+				auto arr = new double[ns*nmu];
+				arr[] = hist.bin[0..ns*nmu];
+				MPI_Reduce(cast(void*)&arr[0],cast(void*)hist.bin, ns*nmu, MPI_DOUBLE, MPI_SUM, root, comm);
+			} else {
+				MPI_Reduce(cast(void*)hist.bin, null, ns*nmu, MPI_DOUBLE, MPI_SUM, root, comm);
+			}
+		}
+	}
 
 
 	//private double[] hist;
