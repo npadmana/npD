@@ -19,18 +19,11 @@ int testMpiSizes() {
 // This is a hack, but it sort of works
 opaque returnMPIsymbol(int i) {
 	switch(i) {
-		case 1 : return (opaque) MPI_COMM_WORLD;
-	}
-	return 0;
-}
-
-// This is a hack, but it sort of works
-opaque returnMPIdatatype(int i) {
-	switch(i) {
-		case 0 : return (opaque) MPI_CHAR;
-		case 1 : return (opaque) MPI_INT;
-		case 2 : return (opaque) MPI_LONG;
-		case 3 : return (opaque) MPI_DOUBLE;
+		case 0 : return (opaque) MPI_COMM_WORLD;
+		case 1 : return (opaque) MPI_CHAR;
+		case 2 : return (opaque) MPI_INT;
+		case 3 : return (opaque) MPI_LONG;
+		case 4 : return (opaque) MPI_DOUBLE;
 	}
 	return 0;
 }

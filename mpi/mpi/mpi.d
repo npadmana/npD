@@ -23,42 +23,45 @@ extern (C) {
 	// Convenience functions
 	int testMpiSizes();
 	MPI_Opaque returnMPIsymbol(int i);
-	MPI_Opaque returnMPIdatatype(int i);
 
 }
 
 // Symbols
 alias MPI_Opaque MPI_Comm;
 alias MPI_Opaque MPI_Datatype;
-// Doing the full list here would be a good example of a mixin
-MPI_Comm MPI_COMM_WORLD;
+
+struct MPISymbol {
+	string typename;
+	int i;
+}
+
+immutable MPI_SYMBOL_LIST = ["MPI_COMM_WORLD","MPI_CHAR", "MPI_INT", "MPI_LONG","MPI_DOUBLE"];
+immutable MPI_SYMBOL_TYPE = ["MPI_Comm", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype"];
+
+private string __buildTypeDecl() {
+	string str="";
+	foreach (i, k1 ; MPI_SYMBOL_LIST) {
+		str ~= format("%s %s;\n",MPI_SYMBOL_TYPE[i],k1);
+	}
+	return str;
+}
+
+
+private string __buildTypeInit() {
+	string str="";
+	foreach (i, k1; MPI_SYMBOL_LIST) {
+		str ~= format("%s=returnMPIsymbol(%d);\n",k1,i);
+	}
+	return str;
+}
+
+
 
 // MPI datatypes
-immutable MPI_DATATYPE_LIST =["MPI_CHAR","MPI_INT", "MPI_LONG","MPI_DOUBLE"];
-mixin(__buildDataTypeDecl());
-
-private string __buildDataTypeDecl() {
-	string str="";
-	foreach (l1 ; MPI_DATATYPE_LIST) {
-		str ~= format("MPI_Datatype %s;\n",l1);
-	}
-	return str;
-}
-
-
-private string __buildDataTypeInit() {
-	string str="";
-	foreach (i, l1 ; MPI_DATATYPE_LIST) {
-		str ~= format("%s=returnMPIdatatype(%d);\n",l1,i);
-	}
-	return str;
-}
-
+mixin(__buildTypeDecl());
 
 static this() {
-	MPI_COMM_WORLD = returnMPIsymbol(1);
-
-	mixin(__buildDataTypeInit());
+	mixin(__buildTypeInit());
 }
 
 private int cstrlen(char* s) {
