@@ -11,6 +11,8 @@ version(MPICH) {
 
 extern (C) {
 	// Current list of MPI functions
+	int MPI_Allreduce(void *sendbuf, void *recvbuf, int count,
+                        MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 	int MPI_Barrier(MPI_Comm comm);
 	int MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, 
 				int root, MPI_Comm comm);
