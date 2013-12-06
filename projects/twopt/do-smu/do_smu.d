@@ -1,4 +1,4 @@
-import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string;
+import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string, std.random;
 
 import mpi, ini, spatial, paircounters;
 
@@ -47,49 +47,88 @@ void main(char[][] args) {
 	sort(jobs);
 
 	// Initial paircounters 
-	auto DD = new SMuPairCounter!Particle(smax, ns, nmu);
-	auto DR = new SMuPairCounter!Particle(smax, ns, nmu);
-	auto RR = new SMuPairCounter!Particle(smax, ns, nmu);
+	auto PP = new SMuPairCounter!Particle(smax, ns, nmu);
 
+	Particle[] darr, rarr, darr2, rarr2;
+	Particle[][] dsplit, rsplit;
+	KDNode!Particle root1, root2;
 
 	// Loop over jobs
 	bool noRR;
 	StopWatch sw;
-	foreach (ijob, job1; jobs) {
-		if ((ijob % size) != rank) continue;
+	foreach (job1; jobs) {
+		MPI_Barrier(MPI_COMM_WORLD);
+		sw.reset(); sw.start();
 		auto params = ini.get!(string[])(job1);
 		if (params.length < 3) throw new Exception("job specs need at least three parameters");
 		if ((params.length > 3) && (params[3]=="noRR")) noRR=true; else noRR=false;
-		writef("[%d]%s : Processing D=%s and D=%s to %s-{norm,DD,DR",rank, job1, params[0],params[1],params[2]);
-		if (!noRR) write(",RR");
-		writeln("}.dat .....");
 
-		// Read in D & R
-		auto darr = readFile(params[0]);
-		auto rarr = readFile(params[1]);
+		if (rank==0) {
+			writef("%s : Processing D=%s and D=%s to %s-{norm,DD,DR",job1, params[0],params[1],params[2]);
+			if (!noRR) write(",RR");
+			writeln("}.dat .....");
+			// Read in D & R
+			darr = readFile(params[0]);
+			rarr = readFile(params[1]);
+
+			writeln("Data read in.....");
+
+			randomShuffle(darr);
+			randomShuffle(rarr);
+			writeln("Data shuffled....");
+		}
 
 		// Build trees
-		sw.reset();
-		sw.start();
-		auto droot = new KDNode!Particle(darr, 0, minPart);
-		auto rroot = new KDNode!Particle(rarr, 0, minPart);
-		writefln("[%d]%s : Elapsed time after building trees (in sec): %s",rank, job1, sw.peek.seconds);
+		
+		// Broadcast
+		Bcast(darr, 0, MPI_COMM_WORLD);
+		Bcast(rarr, 0, MPI_COMM_WORLD);
 
-		DD.reset(); DR.reset(); RR.reset();
+		// Make copies!! VERY IMPORTANT == OTHERWISE MANY BUGS WILL HAPPEN!!
+		// THIS IS BECAUSE KDNode does not store the particle data!
+		darr2= darr.dup;
+		rarr2 = rarr.dup;
 
-		DD.accumulateParallel!minmaxDist(droot, droot, nworkers);
-		DD.write(File(params[2]~"-DD.dat","w"));
-		writefln("[%d]%s : Elapsed time after DD (in sec): %s",rank, job1, sw.peek.seconds);
-		DR.accumulateParallel!minmaxDist(droot, rroot, nworkers);
-		DR.write(File(params[2]~"-DR.dat","w"));
-		writefln("[%d]%s : Elapsed time after DR (in sec): %s",rank, job1, sw.peek.seconds);
-		if (!noRR) {
-			RR.accumulateParallel!minmaxDist(rroot, rroot, nworkers);
-			RR.write(File(params[2]~"-RR.dat","w"));
-			writefln("[%d]%s : Elapsed time after RR (in sec): %s",rank, job1, sw.peek.seconds);
+		// Split
+		dsplit = Split(darr2, MPI_COMM_WORLD);
+		rsplit = Split(rarr2, MPI_COMM_WORLD);
+
+		if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1, sw.peek.seconds);
+
+		// DD
+		root1 = new KDNode!Particle(darr,0, minPart);
+		root2 = new KDNode!Particle(dsplit[rank],0,minPart);
+		PP.reset();
+		PP.accumulateParallel!minmaxDist(root1, root2, nworkers);
+		PP.mpiReduce(0, MPI_COMM_WORLD);
+		if (rank==0) {
+			PP.write(File(params[2]~"-DD.dat","w"));
+			writefln("%s : Elapsed time after DD (in sec): %s", job1, sw.peek.seconds);
 		}
-		sw.stop();
-		writefln("[%d]%s : Total time: %s",rank, job1, sw.peek.seconds);
+
+		// DR 
+		root1 = new KDNode!Particle(darr,0, minPart);
+		root2 = new KDNode!Particle(rsplit[rank],0,minPart);
+		PP.reset();
+		PP.accumulateParallel!minmaxDist(root1, root2, nworkers);
+		PP.mpiReduce(0, MPI_COMM_WORLD);
+		if (rank==0) {
+			PP.write(File(params[2]~"-DR.dat","w"));
+			writefln("%s : Elapsed time after DR (in sec): %s", job1, sw.peek.seconds);
+		}
+
+		// RR
+		if (noRR) continue;
+		root1 = new KDNode!Particle(rarr,0, minPart);
+		root2 = new KDNode!Particle(rsplit[rank],0,minPart);
+		PP.reset();
+		PP.accumulateParallel!minmaxDist(root1, root2, nworkers);
+		PP.mpiReduce(0, MPI_COMM_WORLD);
+		if (rank==0) {
+			PP.write(File(params[2]~"-RR.dat","w"));
+			writefln("%s : Elapsed time after RR (in sec): %s", job1, sw.peek.seconds);
+		}
+
 	}
 
 }
