@@ -76,7 +76,6 @@ void main(char[][] args) {
 
 		DD.reset(); DR.reset(); RR.reset();
 
-		// Single threaded version
 		DD.accumulateParallel!minmaxDist(droot, droot, nworkers);
 		DD.write(File(params[2]~"-DD.dat","w"));
 		writefln("[%d]%s : Elapsed time after DD (in sec): %s",rank, job1, sw.peek.seconds);

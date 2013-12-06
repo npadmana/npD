@@ -27,11 +27,24 @@ unittest {
 
 
 // This is a helper function for parallel accumulates
-void parallelAccHelper(H, P)(H store, P[] arr1, P[] arr2, double scale) {
-	auto me = store.get();
-	me.accumulate(arr1, arr2, scale);
+// 
+// This is a little ugly, so here is a full description of what this does
+//     H : Type of data for local storage. In this case, these are independent histograms
+//     P : Point type
+//
+//     pool : The taskpool. This is only being sent in to get at the worker index
+//     store : The array for local storage. See IMPORTANT NOTE BELOW.
+//     arr1, arr2 : Point arrays
+//     scale : scale weights by this number.
+//
+//     It is assumed that H has an accumulate method.
+//
+// IMPORTANT NOTE : The taskpool sometimes runs jobs in the main thread with index=0. So store
+//  should be an array with nworkers+1 where 0 will be used by the main thread. 
+void parallelAccHelper(H, P)(TaskPool pool, H store, P[] arr1, P[] arr2, double scale) {
+	auto me = pool.workerIndex;
+	store[me].accumulate(arr1, arr2, scale);
 }
-
 
 // Define the s-mu paircounting class
 class SMuPairCounter(P) if (isWeightedPoint!P) {
@@ -94,43 +107,34 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 
 	// Tree accumulate 
 	void accumulate(alias dist, P) (KDNode!P a, KDNode!P b) {
-		auto isauto = a is b;  // Auto-correlations
 		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
 		foreach(a1, b1; walker) {
-			if (isauto && (a1.id > b1.id)) continue;
-			if (isauto && (a1.id < b1.id)) {
-				accumulate(a1.arr, b1.arr, 2);
-			} else {
-				accumulate(a1.arr, b1.arr, 1);
-			}
+			accumulate(a1.arr, b1.arr, 1);
 		}
 	}
 
 
 	// Accumulate in parallel
 	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers) {
+		auto store = new SMuPairCounter!(P)[nworkers+1];
+		foreach (ref h1; store) {
+			h1 = new SMuPairCounter!P(smax, ns, nmu);
+		}
+
 		// Create a new taskPool
 		auto pool = new TaskPool(nworkers);
-		auto histarr = taskPool.workerLocalStorage(new SMuPairCounter!P(smax,ns,nmu));
-		double scale;
+		//auto histarr = taskPool.workerLocalStorage(store);
 
-
-		auto isauto = a is b;  // Auto-correlations
+		//auto isauto = a is b;  // Auto-correlations
 		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
 		foreach(a1, b1; walker) {
-			if (isauto && (a1.id > b1.id)) continue;
-			if (isauto && (a1.id < b1.id)) {
-				scale = 2;
-			} else {
-				scale = 1;
-			}
-			auto t = task!(parallelAccHelper!(typeof(histarr),P))(histarr, a1.arr, b1.arr, scale);
+			auto t = task!(parallelAccHelper!(typeof(store),P))(pool, store, a1.arr, b1.arr, 1);
 			pool.put(t);
 		}
 
 		pool.finish(true);
 
-		foreach (h1; histarr.toRange) {
+		foreach (h1; store) {
 			this += h1;
 		}
 	}
