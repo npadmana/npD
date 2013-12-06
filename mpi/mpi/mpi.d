@@ -20,6 +20,8 @@ extern (C) {
 	int MPI_Comm_size(MPI_Comm comm, int *size);
 	int MPI_Finalize();
 	int MPI_Init(int *argc, char ***argv);
+	int MPI_Reduce(void *sendbuf, void *recvbuf, int count,
+               MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);
 
 
 	// Convenience functions
@@ -119,9 +121,10 @@ version(TESTING) {
 		if (MPI_Init(args) != 0) throw new Exception("Unable to initialize MPI");
 		scope(exit) MPI_Finalize();
 
-		int rank;
+		int rank, size;
 		MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-		
+		MPI_Comm_size(MPI_COMM_WORLD,&size);
+
 		// Test BCast
 		auto test = [1.0, 2.0, 3.0, 10.0];
 		typeof(test) test2;
@@ -132,5 +135,13 @@ version(TESTING) {
 
 		Bcast(test2, 0, MPI_COMM_WORLD);
 		assert(test == test2);	
+
+		// Test reduce 
+		MPI_Reduce(cast(void*)&test[0], cast(void*)&test2[0],to!int(test.length), MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		test[] = size*test[];
+		if (rank == 0) {
+			assert(test == test2);	
+		}
+
 	}
 }
