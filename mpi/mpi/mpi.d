@@ -115,6 +115,20 @@ void Bcast(T) (ref T[] arr, int root, MPI_Comm comm) {
 }
 
 
+// Split an array 
+T[] Split(T) (T[] arr) {
+	int rank, size;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&size);
+	auto nel = arr.length;
+
+	auto block = nel/size;
+	auto start = rank*block;
+	auto end = start + block;
+	if (end > nel) end = nel;
+	return arr[start..end];
+}
+
 
 version(TESTING) {
 	void main(char[][] args) {
