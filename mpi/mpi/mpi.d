@@ -1,6 +1,6 @@
 module mpi;
 
-import std.string;
+import std.string, std.conv, std.stdio;
 
 version(OMPI) {
 	alias void* MPI_Opaque; 
@@ -38,8 +38,8 @@ struct MPISymbol {
 	int i;
 }
 
-immutable MPI_SYMBOL_LIST = ["MPI_COMM_WORLD","MPI_CHAR", "MPI_INT", "MPI_LONG","MPI_DOUBLE", "MPI_SUM"];
-immutable MPI_SYMBOL_TYPE = ["MPI_Comm", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype","MPI_Op"];
+immutable MPI_SYMBOL_LIST = ["MPI_COMM_WORLD","MPI_CHAR", "MPI_INT", "MPI_LONG","MPI_DOUBLE", "MPI_SUM","MPI_UNSIGNED_LONG"];
+immutable MPI_SYMBOL_TYPE = ["MPI_Comm", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype", "MPI_Datatype","MPI_Op","MPI_Datatype"];
 
 // Mixin helpers --- we should have a version that just builds the corresponding C function ????
 private string __buildTypeDecl() {
@@ -96,4 +96,41 @@ int MPI_Init(ref char[][] args) {
 	}
 
 	return retval;
+}
+
+
+// Broadcast wrapper
+void Bcast(T) (ref T[] arr, int root, MPI_Comm comm) {
+	int rank;
+	ulong n;
+	MPI_Comm_rank(comm,&rank);
+	if (rank == root) {
+		n = arr.length;
+	} 
+	MPI_Bcast(&n, 1, MPI_UNSIGNED_LONG, root, comm);
+	arr.length = n;
+	MPI_Bcast(cast(void*)&arr[0], to!int(n*T.sizeof), MPI_CHAR, root, comm);
+}
+
+
+
+version(TESTING) {
+	void main(char[][] args) {
+		if (MPI_Init(args) != 0) throw new Exception("Unable to initialize MPI");
+		scope(exit) MPI_Finalize();
+
+		int rank;
+		MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+		
+		// Test BCast
+		auto test = [1.0, 2.0, 3.0, 10.0];
+		typeof(test) test2;
+		if (rank==0) {
+			test2.length = test.length;
+			test2[] = test[];
+		}		
+
+		Bcast(test2, 0, MPI_COMM_WORLD);
+		assert(test == test2);	
+	}
 }

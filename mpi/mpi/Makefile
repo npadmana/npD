@@ -11,6 +11,11 @@ else
 	ar -ru ${NPD_DIR}/lib/libmpid.a mpi_wrapper.o mpi.o
 endif
 
+unittests : libmpid
+	${DC} -c -fPIC -version=${MPIVERSION} mpi.d -ofmpi_testing.o -version=TESTING
+	${MPICC} -o mpi_testing.x mpi_testing.o mpi_wrapper.o -L${DMDDIR} ${PHOBOSLIB}
+
+
 
 
 # Clean up
