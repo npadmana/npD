@@ -153,7 +153,7 @@ void main(char[][] args) {
 
 		// RR
 		if (noRR) continue;
-		computeCorr(rroot, droot);
+		computeCorr(rroot, rroot);
 		if (rank==0) {
 			PP.write(File(params[2]~"-RR.dat","w"));
 			writefln("%s : Elapsed time after RR (in sec): %s", job1, sw.peek.seconds);
