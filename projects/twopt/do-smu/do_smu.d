@@ -1,4 +1,4 @@
-import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string, std.random;
+import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string, std.random, std.range;
 
 import mpi, ini, spatial, paircounters;
 
@@ -41,6 +41,8 @@ Particle[] readFile(string fn) {
 	}
 	return parr;
 }
+
+
  
 void main(char[][] args) {
 	if (MPI_Init(args) != 0) throw new Exception("Unable to initialize MPI");
@@ -71,9 +73,10 @@ void main(char[][] args) {
 	// Initial paircounters 
 	auto PP = new SMuPairCounter!Particle(smax, ns, nmu);
 
-	Particle[] darr, rarr, darr2, rarr2;
+	Particle[] darr, rarr;
 	Particle[][] dsplit, rsplit;
-	KDNode!Particle root1, root2;
+	KDNode!Particle[] droot = new KDNode!Particle[size];
+	KDNode!Particle[] rroot = new KDNode!Particle[size];
 	string RRfn_save;
 
 	// Loop over jobs
@@ -117,38 +120,46 @@ void main(char[][] args) {
 		Bcast(darr, 0, MPI_COMM_WORLD);
 		Bcast(rarr, 0, MPI_COMM_WORLD);
 
-		// Make copies!! VERY IMPORTANT == OTHERWISE MANY BUGS WILL HAPPEN!!
-		// THIS IS BECAUSE KDNode does not store the particle data!
-		darr2= darr.dup;
-		rarr2 = rarr.dup;
-
 		// Split
-		dsplit = Split(darr2, MPI_COMM_WORLD);
-		rsplit = Split(rarr2, MPI_COMM_WORLD);
+		dsplit = Split(darr, MPI_COMM_WORLD);
+		rsplit = Split(rarr, MPI_COMM_WORLD);
 
 		if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1, sw.peek.seconds);
 
-		// DD
-		PP.reset();
-		foreach (i, j, c; TriangleRange(size)) {
-			if ((c % size) != rank) continue;
-			double scale = (i==j) ? 1 : 2;
-			root1 = new KDNode!Particle(dsplit[i],0, minPart);
-			root2 = new KDNode!Particle(dsplit[j],0,minPart);
-			PP.accumulateParallel!minmaxDist(root1, root2, nworkers,scale);
+		// Build trees
+		foreach (a1, ref b1; lockstep(dsplit, droot)) b1 = new KDNode!Particle(a1, 0, minPart);
+		foreach (a1, ref b1; lockstep(rsplit, rroot)) b1 = new KDNode!Particle(a1, 0, minPart);
+
+		if (rank==0) writefln("%s : Elapsed time after building trees (in sec): %s",job1, sw.peek.seconds);
+
+		void computeCorr(KDNode!Particle[] a1, KDNode!Particle[] a2) {
+			auto isauto = a1 is a2; 
+
+			int nel=-1;
+			double scale;
+
+			PP.reset();
+			foreach (i, root1; a1) {
+				foreach (j, root2; a2) {
+					if (isauto && (j > i)) continue;
+					nel++; // Increment at the start
+					if ((nel % size) != rank) continue;
+					scale = ((!isauto) || (j==i)) ? 1 : 2;
+					PP.accumulateParallel!minmaxDist(root1, root2, nworkers,scale);
+				}
+			}
+			PP.mpiReduce(0, MPI_COMM_WORLD);
 		}
-		PP.mpiReduce(0, MPI_COMM_WORLD);
+
+		// DD
+		computeCorr(droot, droot);
 		if (rank==0) {
 			PP.write(File(params[2]~"-DD.dat","w"));
 			writefln("%s : Elapsed time after DD (in sec): %s", job1, sw.peek.seconds);
 		}
 
 		// DR 
-		root1 = new KDNode!Particle(darr,0, minPart);
-		root2 = new KDNode!Particle(rsplit[rank],0,minPart);
-		PP.reset();
-		PP.accumulateParallel!minmaxDist(root1, root2, nworkers);
-		PP.mpiReduce(0, MPI_COMM_WORLD);
+		computeCorr(droot, rroot);
 		if (rank==0) {
 			PP.write(File(params[2]~"-DR.dat","w"));
 			writefln("%s : Elapsed time after DR (in sec): %s", job1, sw.peek.seconds);
@@ -156,15 +167,7 @@ void main(char[][] args) {
 
 		// RR
 		if (noRR) continue;
-		PP.reset();
-		foreach (i, j, c; TriangleRange(size)) {
-			if ((c % size) != rank) continue;
-			double scale = (i==j) ? 1 : 2;
-			root1 = new KDNode!Particle(rsplit[i],0, minPart);
-			root2 = new KDNode!Particle(rsplit[j],0,minPart);
-			PP.accumulateParallel!minmaxDist(root1, root2, nworkers,scale);
-		}
-		PP.mpiReduce(0, MPI_COMM_WORLD);
+		computeCorr(rroot, droot);
 		if (rank==0) {
 			PP.write(File(params[2]~"-RR.dat","w"));
 			writefln("%s : Elapsed time after RR (in sec): %s", job1, sw.peek.seconds);
