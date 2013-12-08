@@ -1,4 +1,5 @@
 import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string, std.random, std.range;
+import std.parallelism;
 
 import mpi, ini, spatial, paircounters;
 
@@ -127,9 +128,12 @@ void main(char[][] args) {
 		if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1, sw.peek.seconds);
 
 		// Build trees
-		foreach (a1, ref b1; lockstep(dsplit, droot)) b1 = new KDNode!Particle(a1, 0, minPart);
-		foreach (a1, ref b1; lockstep(rsplit, rroot)) b1 = new KDNode!Particle(a1, 0, minPart);
-
+		foreach (i, a1; parallel(dsplit,1)) {
+			droot[i] = new KDNode!Particle(a1, 0, minPart);
+		}
+		foreach (i, a1; parallel(rsplit, 1)) {
+			rroot[i] = new KDNode!Particle(a1, 0, minPart);
+		}
 		if (rank==0) writefln("%s : Elapsed time after building trees (in sec): %s",job1, sw.peek.seconds);
 
 		void computeCorr(KDNode!Particle[] a1, KDNode!Particle[] a2) {
