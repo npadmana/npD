@@ -1,5 +1,5 @@
 import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string, std.random, std.range;
-import std.parallelism;
+import std.parallelism, std.concurrency;
 
 import mpi, ini, spatial, paircounters;
 
@@ -23,6 +23,50 @@ Particle[] readFile(string fn) {
 		parr ~= p;
 	}
 	return parr;
+}
+
+
+
+synchronized class SyncArray {
+	private Particle[] buf;
+
+	void push(Particle[] arr1) {
+		buf.length = arr1.length;
+		buf[] = arr1;
+	}
+
+	Particle[] pop() {
+		auto _tmp = new Particle[buf.length];
+		_tmp[] = buf[];
+		buf = null;
+		return _tmp;
+	}
+}
+
+
+void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf) {
+	writeln("Reader started");
+
+	auto nfiles = receiveOnly!(int)();
+	auto dfns = new string[nfiles];
+	auto rfns = new string[nfiles];
+	foreach (ref fn1, ref fn2; lockstep(dfns, rfns)) {
+		fn1 = receiveOnly!(string)();
+		fn2 = receiveOnly!(string)();	
+	}
+
+	string rfn_save="";
+	bool flag;
+	Particle[] darr, rarr;
+	foreach (dfn, rfn; lockstep(dfns, rfns)) {
+		darr = readFile(dfn);
+		if (rfn != rfn_save) rarr = readFile(rfn);
+		rfn_save = rfn;
+		dbuf.push(darr);
+		rbuf.push(rarr);
+		send(ownerTid, true);
+		flag = receiveOnly!bool();
+	}
 }
 
 
@@ -60,7 +104,21 @@ void main(char[][] args) {
 	Particle[][] dsplit, rsplit;
 	KDNode!Particle[] droot = new KDNode!Particle[size];
 	KDNode!Particle[] rroot = new KDNode!Particle[size];
-	string RRfn_save;
+
+	// Message passing for asyncio
+	auto dbuf = new shared SyncArray;
+	auto rbuf = new shared SyncArray;
+	bool flag;
+	Tid readerTid;
+	if (rank == 0) {
+		readerTid = spawn(&readerProcess, dbuf, rbuf);
+		send(readerTid, to!int(jobs.length));
+		foreach (job1; jobs) {
+			auto params = ini.get!(string[])(job1);
+			send(readerTid, params[0]);
+			send(readerTid, params[1]);
+		}
+	}
 
 	// Loop over jobs
 	bool noRR;
@@ -76,14 +134,20 @@ void main(char[][] args) {
 			writef("%s : Processing D=%s and D=%s to %s-{norm,DD,DR",job1, params[0],params[1],params[2]);
 			if (!noRR) write(",RR");
 			writeln("}.dat .....");
-			// Read in D & R
-			darr = readFile(params[0]);
-			if (params[1]!=RRfn_save) { 
-				rarr = readFile(params[1]);
-			} else {
-				writefln("%s : R repeated... -- reusing", job1);
-			}
-			RRfn_save = params[1];
+
+			flag = receiveOnly!bool();
+			darr = dbuf.pop;
+			rarr = rbuf.pop;
+			send(readerTid, true);
+
+			//// Read in D & R
+			//darr = readFile(params[0]);
+			//if (params[1]!=RRfn_save) { 
+			//	rarr = readFile(params[1]);
+			//} else {
+			//	writefln("%s : R repeated... -- reusing", job1);
+			//}
+			//RRfn_save = params[1];
 
 			writefln("%s : Data read in.....", job1);
 
