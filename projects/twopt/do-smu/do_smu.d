@@ -3,24 +3,6 @@ import std.parallelism;
 
 import mpi, ini, spatial, paircounters;
 
-struct TriangleRange {
-	int n = 0, count=0; 
-	this(int n) {
-		this.n = n;
-	}
-
-	int opApply(int delegate(int i, int j, int c) dg) {
-		foreach (i;0..n) 
-			foreach (j;0..(i+1)) {
-				auto res = dg(i,j, count);
-				if (res) return(res);
-				count += 1;
-			} 
-		return 0;
-	}
-}
-
-
 struct Particle {
 	double x,y,z,w,x2;
 	this(double[] arr) {
