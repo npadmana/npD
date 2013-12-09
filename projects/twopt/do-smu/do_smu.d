@@ -32,12 +32,18 @@ synchronized class SyncArray {
 
 	void push(Particle[] arr1) {
 		buf.length = arr1.length;
-		buf[] = arr1[];
+		foreach(i, x; arr1) {
+			buf[i] = x;
+		}
+		//buf[] = arr1[];
 	}
 
 	Particle[] pop() {
 		auto _tmp = new Particle[buf.length];
-		_tmp[] = buf[];
+		foreach(i,x; buf) {
+			_tmp[i] = x;
+		}
+		//_tmp[] = buf[];
 		buf = null;
 		return _tmp;
 	}
