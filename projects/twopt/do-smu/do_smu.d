@@ -32,7 +32,7 @@ synchronized class SyncArray {
 
 	void push(Particle[] arr1) {
 		buf.length = arr1.length;
-		buf[] = arr1;
+		buf[] = arr1[];
 	}
 
 	Particle[] pop() {

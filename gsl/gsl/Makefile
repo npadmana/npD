@@ -7,9 +7,9 @@ GSLOBJS=histogram.o histogram2d.o
 all : ${GSLFILES}
 	${DC} -c -fPIC -H -Hd${NPD_DIR}/include/gsl ${GSLFILES}
 ifdef BUILDSHARED
-	${CC} ${SOFLAG} -o ${NPD_DIR}/lib/libgsld.${SOEXT} ${GSLOBJS} -L${DMDDIR} ${PHOBOSLIB}
+	${CC} ${SOFLAG} -o ${NPD_LIB}/libgsld.${SOEXT} ${GSLOBJS} -L${DMDDIR} ${PHOBOSLIB}
 else 
-	ar -ru ${NPD_DIR}/lib/libgsld.a ${GSLOBJS}
+	ar -ru ${NPD_LIB}/libgsld.a ${GSLOBJS}
 endif
 
 
