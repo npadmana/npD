@@ -3,12 +3,13 @@ include ../../make.vars
 all : libmpid
 
 libmpid : mpi_wrapper.c mpi.d
+	mkdir -p ${NPD_LIB}
 	${MPICC} -c -fPIC mpi_wrapper.c
 	${DC} -c -fPIC -version=${MPIVERSION} mpi.d
 ifdef BUILDSHARED
-	${MPICC} ${SOFLAG} -o ${NPD_DIR}/lib/libmpid.${SOEXT} mpi_wrapper.o mpi.o -L${DMDDIR} ${PHOBOSLIB}
+	${MPICC} ${SOFLAG} -o ${NPD_LIB}/libmpid.${SOEXT} mpi_wrapper.o mpi.o -L${DMDDIR} ${PHOBOSLIB}
 else 
-	ar -ru ${NPD_DIR}/lib/libmpid.a mpi_wrapper.o mpi.o
+	ar -ru ${NPD_LIB}/libmpid.a mpi_wrapper.o mpi.o
 endif
 	cp mpi.d ${NPD_DIR}/include
 

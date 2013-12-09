@@ -1,4 +1,3 @@
-DMDDIR=/Users/npadmana/D/dmd2/osx/lib
 NPD_DIR=/Users/npadmana/D/npD
 MPICC=mpicc
 CC=gcc
@@ -7,4 +6,15 @@ MPIVERSION=OMPI
 SOEXT=dylib
 SOFLAG=-dynamiclib
 LFLAGS=
-PHOBOSLIB=-lphobos2 
+
+# The default on my laptop should be DMD
+ifdef LDC
+DC=ldmd2
+DMDDIR=/Users/npadmana/D/ldc/ldc2/lib
+PHOBOSLIB=-lphobos-ldc
+NPD_LIB=${NPD_DIR}/lib/ldc
+else
+PHOBOSLIB=-lphobos2
+DMDDIR=/Users/npadmana/D/dmd2/osx/lib
+NPD_LIB=${NPD_DIR}/lib/dmd
+endif
