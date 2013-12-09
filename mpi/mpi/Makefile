@@ -15,7 +15,7 @@ endif
 
 unittests : libmpid
 	${DC} -c -fPIC -version=${MPIVERSION} mpi.d -ofmpi_testing.o -version=TESTING
-	${MPICC} -o mpi_testing.x mpi_testing.o mpi_wrapper.o -L${DMDDIR} ${PHOBOSLIB}
+	${MPICC} ${LFLAGS} -o mpi_testing.x mpi_testing.o mpi_wrapper.o -L${DMDDIR} ${PHOBOSLIB}
 
 
 
