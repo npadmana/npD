@@ -13,9 +13,10 @@ DC=dmd
 DMDDIR=/global/homes/n/npadmana/D/dmd2/linux/lib
 NPD_LIB=${NPD_DIR}/lib/dmd
 else
-PHOBOSLIB=-lphobos-ldc
-LFLAGS=
+BUILDSHARED=1
+LFLAGS=-dynamic
 SOFLAG=-shared
+PHOBOSLIB=-lphobos-ldc
 DC=ldmd2
 DMDDIR=/global/homes/n/npadmana/llvm/lib
 NPD_LIB=${NPD_DIR}/lib/ldc
