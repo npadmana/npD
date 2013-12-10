@@ -57,11 +57,11 @@ void * gsl_qrng_state (const gsl_qrng * q);
 
 
 /* Retrieve next vector in sequence. */
-int gsl_qrng_get (const gsl_qrng * q, double x[]);
+int gsl_qrng_get (const gsl_qrng * q, double *x);
 }
 
 unittest {
-	import std.stdio, std.conv;
+	import std.conv;
 
 	auto nied = gsl_qrng_alloc(gsl_qrng_niederreiter_2, 1);
 	auto sobol = gsl_qrng_alloc(gsl_qrng_sobol, 1);
@@ -76,3 +76,22 @@ unittest {
 	gsl_qrng_free(halton);
 	gsl_qrng_free(rhalton);
 }
+
+unittest {
+	// Test of the Niederreiter sequence  --- test is out of the GSL test (qrng/test.c [test_nied2])
+	auto nied2 = gsl_qrng_alloc(gsl_qrng_niederreiter_2, 2);
+	double[2] x;
+	gsl_qrng_get(nied2,&x[0]);
+	gsl_qrng_get(nied2,&x[0]);
+	gsl_qrng_get(nied2,&x[0]);
+	assert((x[0]==0.75)&&(x[1]==0.25));
+	gsl_qrng_get(nied2,&x[0]);
+	assert((x[0]==0.25)&&(x[1]==0.75));
+	gsl_qrng_get(nied2,&x[0]);
+	gsl_qrng_get(nied2,&x[0]);
+	gsl_qrng_get(nied2,&x[0]);
+	assert((x[0]==0.625)&&(x[1]==0.125));
+	gsl_qrng_free(nied2); 
+
+}
+
