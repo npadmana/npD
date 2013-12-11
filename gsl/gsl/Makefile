@@ -1,7 +1,7 @@
 include ../../make.vars
 
-GSLFILES=histogram.d histogram2d.d qrng.d integration.d
-GSLOBJS=histogram.o histogram2d.o qrng.o integration.o
+GSLFILES=histogram.d histogram2d.d qrng.d integration.d interpolation.d
+GSLOBJS=histogram.o histogram2d.o qrng.o integration.o interpolation.o
 
 all : ${GSLFILES}
 	${DC} -c -fPIC -H -Hd${NPD_DIR}/include/gsl -I.. ${GSLFILES}
