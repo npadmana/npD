@@ -268,15 +268,6 @@ void gsl_test_rel(double result, double expected, double relerr, string msg) {
 	assert(test, msg);
 }
 
-// Helper functions for callbacks
-static double callback(P) (double x, void *p) {
-	auto ff = *(cast(P*)(p));
-	return ff(x);
-}
-gsl_function make_function(P)(P* func) {
-	gsl_function g = {&callback!P, cast(void*)func};
-	return g;
-}
 
 struct f1 {
 	double alpha;
@@ -298,7 +289,7 @@ struct f1 {
 
     //double alpha = 2.6 ;
     auto ff = f1(2.6);
-    gsl_function f = make_function(&ff);
+    gsl_function f = make_gsl_function(&ff);
     
     status = gsl_integration_qng (&f, 0.0, 1.0, 1e-1, 0.0,
                                   &result, &abserr, &neval) ;
@@ -328,7 +319,7 @@ struct f1 {
 
     double alpha = 2.6 ;
     auto ff = f1(alpha);
-    gsl_function f = make_function(&ff) ;
+    gsl_function f = make_gsl_function(&ff) ;
 
     status = gsl_integration_qag (&f, 0.0, 1.0, 0.0, 1e-10, 1000,
                                   GSL_INTEG_GAUSS15, w,
@@ -367,7 +358,7 @@ struct f1 {
 
     double alpha = 2.6 ;
     auto ff = f1(alpha);
-    gsl_function f = make_function(&ff) ;
+    gsl_function f = make_gsl_function(&ff) ;
 
     status = gsl_integration_qag (&f, 0.0, 1.0, 1e-14, 0.0, 1000,
                               GSL_INTEG_GAUSS21, w,
@@ -410,7 +401,7 @@ struct f1 {
     double alpha = 1.0 ;
     int neval = 0;
     auto ff = (double x) {neval++; return x>0 ? log(x) : 0.0e0;};
-    gsl_function f = make_function(&ff);
+    gsl_function f = make_gsl_function(&ff);
 
     status = gsl_integration_qawo (&f, 0.0, 0.0, 1e-7, 1000,
                                    w, wo, &result, &abserr) ;
