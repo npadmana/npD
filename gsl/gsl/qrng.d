@@ -4,7 +4,7 @@
 
 /* Author: G. Jungman + modifications from O. Teytaud
  */
-module qrng;
+module gsl.qrng;
 
 // Dummy structs
 alias struct gsl_qrng_type;
