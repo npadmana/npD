@@ -1,6 +1,6 @@
 module physics.cosmo;
 
-import std.math;
+import std.math, std.traits;
 import gsl.integration;
 import physics.constants;
 
@@ -19,11 +19,22 @@ struct SimpleLCDM {
 	}
 }
 
+T vectorize(alias ff, T) (T a) 
+	if (isScalarType!T || isArray!T)
+{
+	static if (isArray!T) {
+		auto resarr = new typeof(a[0])[a.length];
+		foreach (i, x; a) resarr[i] = ff(x);
+		return resarr;
+	} else {
+		return ff(a);
+	}
+}
 
 
 /// Comoving distance code
 T comDis(C,T)(C s, T a) 
-     if ((is(typeof(s.hubble(1))==double)) && (is(T : double) || is(T : double[])))
+     if (is(typeof(s.hubble(1))==double))
 {
 	auto w = gsl_integration_workspace_alloc (1000) ;
 	scope(exit) gsl_integration_workspace_free(w);
@@ -31,20 +42,15 @@ T comDis(C,T)(C s, T a)
 	auto fwrap = (double a) {return 1/(a*a*s.hubble(a));};
 	auto f = make_gsl_function(&fwrap);
 
-	double result, abserr;
-	static if (is(T : double)) {
-			gsl_integration_qag (&f, a, 1.0, 1.0e-14, 1.0e-7, 1000,
+	
+	auto ff = (double x) {
+		double result, abserr;
+		gsl_integration_qag (&f, x, 1.0, 1.0e-14, 1.0e-7, 1000,
                          	GSL_INTEG_GAUSS21, w, &result, &abserr);
-			return result;
-		} else 
-		{
-			auto resarr = new typeof(a[0])[a.length];
-			foreach (i, x; a) {
-				gsl_integration_qag (&f, x, 1.0, 1.0e-14, 1.0e-7, 1000,
-                       GSL_INTEG_GAUSS21, w, &resarr[i], &abserr);
-			}
-			return resarr;
-		}
+		return result;
+	};
+	return vectorize!ff(a);
+	
 }
 
 
@@ -74,6 +80,5 @@ unittest {
 				auto got = eds.comDis(avals).map!(x=>x*c_h0).array;
 				got.must.approxEqual(expected,0,0.1);
     		});
-
 
 }
