@@ -6,6 +6,7 @@ GSLBINDOBJS=ls bindings/${BUILDDIR}/*.o | grep -v unittests
 
 
 all : buildbindings ${GSLOBJS} 
+	mkdir -p ${NPD_LIB}
 ifdef BUILDSHARED
 	${CC} ${SOFLAG} -o ${NPD_LIB}/libgsld.${SOEXT} ${GSLOBJS} `${GSLBINDOBJS}` ${PHOBOSLIB}
 else 
