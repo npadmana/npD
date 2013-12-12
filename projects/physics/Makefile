@@ -12,8 +12,8 @@ OBJS=${FILES:.d=.o}
 
 
 unittests :
-	${DC} -c -unittest -main -I.. -I${NPD_DIR}/include ${FILES} -ofphys_unittests.o
-	${CC} ${LFLAGS} -o phys_unittests.x phys_unittests.o  -L${GSL_DIR}/lib -lgsl -lgslcblas -L${DMDDIR} ${PHOBOSLIB}
+	${DC} -c -unittest testmain.d -I.. -I${NPD_DIR}/include ${FILES} -ofphys_unittests.o
+	${CC} ${LFLAGS} -o phys_unittests.x phys_unittests.o -L${NPD_LIB} -lspecd -L${GSL_DIR}/lib -lgsl -lgslcblas -L${DMDDIR} ${PHOBOSLIB}
 	./phys_unittests.x
 
 
