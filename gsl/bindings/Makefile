@@ -1,7 +1,7 @@
-include ../../../make.vars
+include ../../make.vars
 
 GSLFILES=histogram.d histogram2d.d qrng.d integration.d interpolation.d
-GSLOBJS=${GSLFILES:.d=.o}
+GSLOBJS=${GSLFILES:%.d=${BUILDDIR}/%.o}
 GSLLINK=-L${GSL_DIR}/lib -lgsl -lgslcblas 
 
 all : ${GSLOBJS}
@@ -13,10 +13,9 @@ unittests :
 	${BUILDDIR}/gsl_unittests.x
 
 .SUFFIXES:
-.SUFFIXES: .d .o
 
-.d.o :
-	${DC} ${DCFLAGS} -O $<
+${BUILDDIR}/%.o: %.d
+	${DC} ${DCFLAGS} -O $< -of$@
 
 
 
