@@ -1,7 +1,7 @@
 module paircounters;
 
 import std.stdio, std.math, std.conv, std.parallelism;
-import gsl.histogram2d, spatial;
+import gsl.histogram, spatial;
 
 // Make an MPI-supported version
 version(MPI) {
