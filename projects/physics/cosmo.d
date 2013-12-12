@@ -42,12 +42,19 @@ double comDis(C)(C s, double a)
 unittest {
 	import std.stdio;
 
-	// Einstein-de Sitter
+	// Numbers here taken from Ned Wright's cosmology calculator
 	auto eds = SimpleLCDM(1, 1);
 	auto c_h0 = cLight_kms/100;
 	assert(approxEqual(c_h0*eds.comDis(0.5),1756.1,1.0e-4, 1.0e-4));
 
 	eds = SimpleLCDM(0.7, 1);
 	assert(approxEqual(c_h0*eds.comDis(0.5),2508.7,1.0e-4, 1.0e-4));
+
+	eds = SimpleLCDM(0.7, 0.3, 0.7);
+	assert(approxEqual(c_h0*eds.comDis(0.5),2795.0,1.0e-4, 1.0e-4));
+
+	eds = SimpleLCDM(0.7, 0.3);
+	assert(approxEqual(c_h0*eds.comDis(0.5),3303.5,1.0e-4, 1.0e-4));
+
 
 }
