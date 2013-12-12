@@ -1,29 +1,36 @@
-include ../../make.vars
+include ../make.vars
 
 GSLFILES=
-GSLOBJS=${GSLFILES:.d=.o}
+GSLOBJS=${GSLFILES:%.d=${BUILDDIR}/%.o}
+GSLBINDOBJS=ls bindings/${BUILDDIR}/*.o | grep -v unittests
 
-all : ${GSLOBJS} bindings
+
+all : buildbindings ${GSLOBJS} 
 ifdef BUILDSHARED
-	${CC} ${SOFLAG} -o ${NPD_LIB}/libgsld.${SOEXT} ${GSLOBJS} -L${DMDDIR} ${PHOBOSLIB}
+	${CC} ${SOFLAG} -o ${NPD_LIB}/libgsld.${SOEXT} ${GSLOBJS} `${GSLBINDOBJS}` ${PHOBOSLIB}
 else 
-	ar -ru ${NPD_LIB}/libgsld.a ${GSLOBJS}
+	ar -ru ${NPD_LIB}/libgsld.a ${GSLOBJS} `${GSLBINDOBJS}`
 endif
 
 
-unittests :
-	${DC} -c -unittest -main -I.. ${GSLFILES} -ofgsl_unittests.o
-	${CC} ${LFLAGS} -o gsl_unittests.x gsl_unittests.o  -L${GSL_DIR}/lib -lgsl -lgslcblas -L${DMDDIR} ${PHOBOSLIB}
-	./gsl_unittests.x
+# unittests :
+# 	${DC} -c -unittest -main -I.. ${GSLFILES} -ofgsl_unittests.o
+# 	${CC} ${LFLAGS} -o gsl_unittests.x gsl_unittests.o  -L${GSL_DIR}/lib -lgsl -lgslcblas -L${DMDDIR} ${PHOBOSLIB}
+# 	./gsl_unittests.x
 
 cleaninstall :
 	-rm -f ${NPD_LIB}/libgsld.a
 
-.SUFFIXES:
-.SUFFIXES: .d .o
 
-.d.o :
-	${DC} -c -fPIC -I.. $<
+buildbindings :
+	cd bindings; make all
+
+
+
+.SUFFIXES:
+
+${BUILDDIR}/%.o: %.d
+	${DC} ${DCFLAGS} -O $< -of$@
 
 
 
