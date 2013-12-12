@@ -19,7 +19,7 @@ module gsl.bindings.integration;
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-public import gsl.common;
+public import gsl.bindings.common;
 
 /* Workspace for adaptive integrators */
 alias struct gsl_integration_workspace;

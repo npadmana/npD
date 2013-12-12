@@ -1,0 +1,11 @@
+GSL bindings to D go here.
+
+These stick (as closely as I could) to the GSL API. These files are publically imported by the routines
+in the directory above, which (where I felt like it) provide convenience wrappers around these routines.
+
+common : Some common routines, plus some low-level convenience functions
+
+histogram, histogram2d : GSL histogramming routines (the fread/fwrite routines have not been ported).
+integration : GSL integration routines
+interpolation : GSL interpolation and spline routines
+qrng : Quasi-random numbers
