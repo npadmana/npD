@@ -1,4 +1,4 @@
-include ../../make.vars
+include ../make.vars
 
 all : libmpid
 CSRCS=mpi_wrapper.c
