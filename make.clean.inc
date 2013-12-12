@@ -1,5 +1,5 @@
 clean :
-	-rm -f *.o *~ 
+	-rm -f *.o *~ ${BUILDDIR}/*.o 
 
 cleanest : clean
-	-rm -f *.a *.x *.di *.so *.dylib
+	-rm -f *.a *.x *.di *.so *.dylib ${BUILDDIR}/*

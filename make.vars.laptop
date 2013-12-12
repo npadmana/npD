@@ -11,10 +11,16 @@ LFLAGS=
 ifdef LDC
 DC=ldmd2
 DMDDIR=/Users/npadmana/D/ldc/ldc2/lib
-PHOBOSLIB=-lphobos-ldc
+PHOBOSLIB=-L${DMDDIR} -lphobos-ldc
 NPD_LIB=${NPD_DIR}/lib/ldc
+BUILDDIR=build/ldc
 else
-PHOBOSLIB=-lphobos2
+PHOBOSLIB=-L${DMDDIR} -lphobos2
 DMDDIR=/Users/npadmana/D/dmd2/osx/lib
 NPD_LIB=${NPD_DIR}/lib/dmd
+BUILDDIR=build/dmd
 endif
+
+
+# Compile time flags for D
+DCFLAGS=-c -fPIC -I${NPD_DIR}/include -od${BUILDDIR}
