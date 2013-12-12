@@ -1,6 +1,7 @@
 # Directories
 lib
 sandbox
+build
 
 # Ignore specialized make.vars
 make.vars
