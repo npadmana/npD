@@ -1,4 +1,4 @@
-module gsl.integration;
+module gsl.bindings.integration;
 
 /* integration/gsl_integration.h
  * 

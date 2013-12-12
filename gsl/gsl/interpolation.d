@@ -1,4 +1,4 @@
-module gsl.interpolation;
+module gsl.bindings.interpolation;
 
 /* interpolation/gsl_interp.h
  * 

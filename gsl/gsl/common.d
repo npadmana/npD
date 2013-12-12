@@ -1,4 +1,4 @@
-module gsl.common;
+module gsl.bindings.common;
 
 alias double function(double, void*) gsl_function_prototype;
 struct gsl_function {

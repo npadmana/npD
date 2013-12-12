@@ -1,4 +1,4 @@
-module gsl.histogram2d; 
+module gsl.bindings.histogram2d; 
 
 // Opaque structures for now
 extern(C) struct gsl_histogram2d {

@@ -1,4 +1,4 @@
-module gsl.histogram;
+module gsl.bindings.histogram;
 
 // Opaque structures for now
 alias struct gsl_histogram;
