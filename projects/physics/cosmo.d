@@ -22,8 +22,8 @@ struct SimpleLCDM {
 
 
 /// Comoving distance code
-double comDis(C)(C s, double a) 
-     if (is(typeof(s.hubble(1))==double))
+T comDis(C,T)(C s, T a) 
+     if ((is(typeof(s.hubble(1))==double)) && (is(T : double) || is(T : double[])))
 {
 	auto w = gsl_integration_workspace_alloc (1000) ;
 	scope(exit) gsl_integration_workspace_free(w);
@@ -32,14 +32,24 @@ double comDis(C)(C s, double a)
 	auto f = make_gsl_function(&fwrap);
 
 	double result, abserr;
-	gsl_integration_qag (&f, a, 1.0, 1.0e-14, 1.0e-7, 1000,
-                         GSL_INTEG_GAUSS21, w, &result, &abserr);
-	return result;
+	static if (is(T : double)) {
+			gsl_integration_qag (&f, a, 1.0, 1.0e-14, 1.0e-7, 1000,
+                         	GSL_INTEG_GAUSS21, w, &result, &abserr);
+			return result;
+		} else 
+		{
+			auto resarr = new typeof(a[0])[a.length];
+			foreach (i, x; a) {
+				gsl_integration_qag (&f, x, 1.0, 1.0e-14, 1.0e-7, 1000,
+                       GSL_INTEG_GAUSS21, w, &resarr[i], &abserr);
+			}
+			return resarr;
+		}
 }
 
 
 unittest {
-	import std.stdio;
+	import std.stdio, std.algorithm, std.array;
 	import specd.specd;
 
 	auto c_h0 = cLight_kms/100;
@@ -55,6 +65,14 @@ unittest {
 				(c_h0*eds.comDis(0.5)).must.approxEqual(2795.0,0,0.2); // off?????
 				eds = SimpleLCDM(0.7, 0.3);
 				(c_h0*eds.comDis(0.5)).must.approxEqual(3303.5,0,0.5); // off????
+    		})
+    	.should("accept array arguments", (when) {
+    			auto eds = SimpleLCDM(1, 1);
+				auto c_h0 = cLight_kms/100;
+				auto avals = [0.1,0.25,0.5,1].map!(z=>1/(1+z)).array;
+				auto expected=[279.0, 633, 1100.2, 1756.1];
+				auto got = eds.comDis(avals).map!(x=>x*c_h0).array;
+				got.must.approxEqual(expected,0,0.1);
     		});
 
 
