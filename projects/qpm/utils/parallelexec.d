@@ -1,12 +1,16 @@
-import std.stdio, std.file, std.parallelism;
+import std.stdio, std.file, std.parallelism, std.process;
 
 void main(string[] args) {
-	if (args.length < 3) {
-		throw new Exception("parallelgzip [dirname] [glob]");
+	if (args.length < 4) {
+		throw new Exception("parallexec [dirname] [glob] [command]");
 	}
 	auto flist = dirEntries(args[1],args[2],SpanMode.shallow,false);
-	foreach (fn; flist) {
-		writeln(fn);
+	foreach (fn; parallel(flist,1)) {
+		auto comm = args[3]~' '~fn;
+		auto ret = execute([args[2],fn]);
+		if (ret.status !=0) {
+			writef("Failed to execute %s\n", comm);
+		} 
 	}
 
 }

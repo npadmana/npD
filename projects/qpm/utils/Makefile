@@ -1,7 +1,7 @@
 include ${NPD_DIR}/make.vars
 
 DFILES=
-SRCS=parallelgzip.d
+SRCS=parallelexec.d
 EXECS=${SRCS:%.d=${BUILDDIR}/%.x}
 #GSLLINK=-L${GSL_DIR}/lib -lgsl -lgslcblas 
 
@@ -11,8 +11,8 @@ all : ${EXECS}
 .SUFFIXES:
 
 ${BUILDDIR}/%.x: %.d
-	${DC} -O ${DCFLAGS} $< ${DFILES} -of${BUILDDIR}/$*.o 
-	${MPICC} ${LFLAGS} -o $@ ${BUILDDIR}/$*.o ${PHOBOSLIB}
+	${DC} -g ${DCFLAGS} $< ${DFILES} -of${BUILDDIR}/$*.o 
+	${CC} ${LFLAGS} -o $@ ${BUILDDIR}/$*.o ${PHOBOSLIB}
 
 
 
