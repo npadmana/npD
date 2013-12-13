@@ -1,4 +1,3 @@
-NPD_DIR=/Users/npadmana/D/npD
 MPICC=mpicc
 CC=gcc
 DC=dmd

@@ -1,4 +1,3 @@
-NPD_DIR=/global/homes/n/npadmana/D/npD
 MPICC=cc
 CC=cc
 MPIVERSION=MPICH
@@ -12,6 +11,7 @@ SOFLAG=-shared
 DC=dmd
 DMDDIR=/global/homes/n/npadmana/D/dmd2/linux/lib
 NPD_LIB=${NPD_DIR}/lib/dmd
+BUILDDIR=build/dmd
 else
 LFLAGS=-dynamic
 SOFLAG=-shared
@@ -19,4 +19,5 @@ PHOBOSLIB=-lphobos-ldc
 DC=ldmd2
 DMDDIR=/global/homes/n/npadmana/llvm/lib
 NPD_LIB=${NPD_DIR}/lib/ldc
+BUILDDIR=build/ldc
 endif
