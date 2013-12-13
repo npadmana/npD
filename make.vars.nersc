@@ -4,7 +4,7 @@ MPIVERSION=MPICH
 SOEXT=so
 
 ifdef DMD
-PHOBOSLIB=-lphobos2 -lssl
+PHOBOSLIB=-L${DMDDIR} -lphobos2 -lssl
 BUILDSHARED=1
 LFLAGS=-dynamic
 SOFLAG=-shared
@@ -15,7 +15,7 @@ BUILDDIR=build/dmd
 else
 LFLAGS=-dynamic
 SOFLAG=-shared
-PHOBOSLIB=-lphobos-ldc
+PHOBOSLIB=-L${DMDDIR} -lphobos-ldc
 DC=ldmd2
 DMDDIR=/global/homes/n/npadmana/llvm/lib
 NPD_LIB=${NPD_DIR}/lib/ldc
