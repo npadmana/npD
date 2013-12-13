@@ -21,3 +21,7 @@ DMDDIR=/global/homes/n/npadmana/llvm/lib
 NPD_LIB=${NPD_DIR}/lib/ldc
 BUILDDIR=build/ldc
 endif
+
+
+# Compile time flags for D
+DCFLAGS=-c -fPIC -I${NPD_DIR}/include 
