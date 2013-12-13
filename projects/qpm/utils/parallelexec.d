@@ -7,7 +7,8 @@ void main(string[] args) {
 	auto flist = dirEntries(args[1],args[2],SpanMode.shallow,false);
 	foreach (fn; parallel(flist,1)) {
 		auto comm = args[3]~' '~fn;
-		auto ret = execute([args[2],fn]);
+		writeln(comm);
+		auto ret = executeShell(comm);
 		if (ret.status !=0) {
 			writef("Failed to execute %s\n", comm);
 		} 
