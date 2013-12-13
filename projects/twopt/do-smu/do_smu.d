@@ -1,7 +1,7 @@
 import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string, std.random, std.range;
 import std.parallelism, std.concurrency;
 
-import mpi, ini, spatial, paircounters;
+import mpi.mpi, ini, spatial, paircounters;
 
 struct Particle {
 	double x,y,z,w,x2;
