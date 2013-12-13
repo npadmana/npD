@@ -5,7 +5,7 @@ import gsl.histogram, spatial;
 
 // Make an MPI-supported version
 version(MPI) {
-	import mpi;
+	import mpi.mpi;
 }
 
 // Template constraint for the paircounter

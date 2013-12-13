@@ -1,4 +1,4 @@
-module mpi;
+module mpi.mpi;
 
 import std.string, std.conv, std.stdio;
 

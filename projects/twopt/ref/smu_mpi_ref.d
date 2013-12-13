@@ -1,7 +1,7 @@
 // Compare direct paircounts with KDTree for random points
 
 import std.stdio, std.algorithm, std.random, std.conv, std.range, std.math, std.datetime;
-import spatial, paircounters, mpi;
+import spatial, paircounters, mpi.mpi;
 
 struct Particle {
 	double x,y,z,w,x2;
