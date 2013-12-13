@@ -3,3 +3,7 @@
 
 conflict npD
 setenv NPD_DIR $env(DWORK)/npD-master
+
+
+# Other useful directories
+setenv GSL_DIR /opt/local
