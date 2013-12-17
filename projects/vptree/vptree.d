@@ -71,7 +71,10 @@ class VPNode(P)
 		//topN!("a[0] < b[0]")(zip(distarr,arr), (nel-1)/2);
 		sort!("a[0]<b[0]")(zip(distarr,arr));
 		vpDist = distarr[(nel-1)/2];
-		auto pos = nel/2;
+		// The middle may not be the split, if multiple objects are vpDist 
+		auto distarr1 = assumeSorted(distarr);
+		auto pos = nel - find!("a>b")(distarr1,vpDist).length;
+
 		_inside = new VPNode(arr[0..pos], minDist, minPart, 2*id+1, true);
 		_outside = new VPNode(arr[pos..$], minDist, minPart, 2*id+2, true);
 	}
@@ -156,6 +159,20 @@ unittest {
 					auto n1in = n1.inside.arr.length;
 					n1.inside.arr.must.be.sameAs(n1.arr[0..n1in]);
 					n1.outside.arr.must.be.sameAs(n1.arr[n1in..$]);
+
+					auto v1 = n1.vantage;
+					auto r1 = n1.dist;
+					// Check that the range property is satisfied for inside
+					if (n1.inside) {
+						auto test = all!((p) {return v1.dist(p) <= r1;})(n1.inside.arr);
+						test.must.be.True;
+					}
+
+					// Check that the range property is satisfied for outside
+					if (n1.outside) {
+						auto test = all!((p) {return v1.dist(p) > r1;})(n1.outside.arr);
+						test.must.be.True;
+					}
 				}
 			}
 			ncount.must.equal(n);
