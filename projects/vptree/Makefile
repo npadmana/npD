@@ -5,7 +5,7 @@ OBJS=${FILES:.d=.o}
 
 unittests :
 	${DC} -c -unittest testmain.d -I.. -I${NPD_DIR}/include ${FILES} -of${BUILDDIR}/vptree_test.o
-	${CC} ${LFLAGS} -o ${BUILDDIR}/vptree_test.x ${BUILDDIR}/vptree_test.o -L${NPD_LIB} -lspecd -L${GSL_DIR}/lib -L${DMDDIR} ${PHOBOSLIB}
+	${CC} ${LFLAGS} -o ${BUILDDIR}/vptree_test.x ${BUILDDIR}/vptree_test.o -L${NPD_LIB} -lspecd -L${GSL_DIR}/lib ${PHOBOSLIB}
 	${BUILDDIR}/vptree_test.x
 
 
