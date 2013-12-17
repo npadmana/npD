@@ -18,6 +18,8 @@ The main tooling branches go here. The distinction is not sharp, but that's fine
 Science
 -------
 
++ __cosmo__ : General cosmology code
+
 + __qpm__ : Code to compute the effect of reconstruction on the QuickPM mock catalogs
 
 + __vptree__ : Vantage point tree code, to build a projected correlation function code for Duncan Campbell.
