@@ -75,6 +75,8 @@ class VPNode(P)
 		auto distarr1 = assumeSorted(distarr);
 		auto pos = nel - find!("a>b")(distarr1,vpDist).length;
 
+		if ((pos==0) || (pos==nel)) return; // Leave as leaf
+
 		_inside = new VPNode(arr[0..pos], minDist, minPart, 2*id+1, true);
 		_outside = new VPNode(arr[pos..$], minDist, minPart, 2*id+2, true);
 	}
@@ -154,22 +156,24 @@ unittest {
 				if (n1.isLeaf) {
 					ncount += n1.arr.length;
 				} else {
-					n1.inside.id.must.equal(2*n1.id+1);
-					n1.outside.id.must.equal(2*n1.id+2);
-					auto n1in = n1.inside.arr.length;
-					n1.inside.arr.must.be.sameAs(n1.arr[0..n1in]);
-					n1.outside.arr.must.be.sameAs(n1.arr[n1in..$]);
+					
 
 					auto v1 = n1.vantage;
 					auto r1 = n1.dist;
 					// Check that the range property is satisfied for inside
 					if (n1.inside) {
+						n1.inside.id.must.equal(2*n1.id+1);
+						auto n1in = n1.inside.arr.length;
+						n1.inside.arr.must.be.sameAs(n1.arr[0..n1in]);
 						auto test = all!((p) {return v1.dist(p) <= r1;})(n1.inside.arr);
 						test.must.be.True;
 					}
 
 					// Check that the range property is satisfied for outside
 					if (n1.outside) {
+						n1.outside.id.must.equal(2*n1.id+2);
+						auto n1in = n1.arr.length-n1.outside.arr.length;
+						n1.outside.arr.must.be.sameAs(n1.arr[n1in..$]);
 						auto test = all!((p) {return v1.dist(p) > r1;})(n1.outside.arr);
 						test.must.be.True;
 					}
@@ -180,4 +184,80 @@ unittest {
 
 	
 }
+
+struct TreeWalk(P)
+{
+	VPNode!P a;
+	P pt;
+	double slo=double.max, shi=-double.max;
+
+	this (VPNode!P a, P pt, double slo, double shi) {
+		this.a = a;
+		this.pt = pt;
+		this.slo = slo; 
+		this.shi = shi;
+	} 
+
+	int opApply(int delegate(VPNode!P a) dg) {
+		// If a is a leaf, we are done.
+		if (a.isLeaf) return dg(a);
+
+		// triangle inequality
+		auto vptdist = a.vantage.dist(pt);
+		auto dmax = a.dist + vptdist;
+		auto dmin = (vptdist - a.dist);
+		dmin = dmin > 0 ? dmin : 0;
+
+		// Always go outside -- removing this more information
+		int retval;
+		if (a.outside) {
+			retval = TreeWalk!P(a.outside, pt, slo, shi).opApply(dg);
+			if (retval) return retval;
+		}
+
+		// Decide whether to go into inside
+		if ((dmin > shi) || (dmax < slo) || !(a.inside)) return retval;
+		retval = TreeWalk!P(a.inside, pt, slo, shi).opApply(dg);	
+		return retval;
+	}
+}
+
+
+unittest {
+	import std.math, std.range, std.stdio;
+	import specd.specd;
+
+	struct Point {
+		double x;
+
+		double dist(Point p1) {
+			return abs(x - p1.x);
+		}
+	}
+
+	int n=10000;
+	Point[] points = new Point[n];
+	// Could have done some slick map stuff, but
+	foreach (ref p1; points) {
+		p1.x = uniform(0.0,1.0);
+	}
+
+	auto root = new VPNode!Point(points);
+	auto refpt = Point(0.5);
+	auto dist = 0.1;
+
+	describe("VPNode TreeWalk")
+		.should("correctly return number of points within a certain distance", (when) {
+			auto nexp = count!((x) {return refpt.dist(x) < dist;})(points);
+			ulong ngot = 0;
+			foreach (n1; TreeWalk!Point(root, refpt, 0.0, dist)) {
+				ngot += count!((x) {return refpt.dist(x) < dist;})(n1.arr);
+			}
+			ngot.must.equal(nexp);
+		});
+}
+
+
+
+
 
