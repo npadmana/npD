@@ -2,6 +2,8 @@ module gsl.integration;
 
 public import gsl.bindings.integration;
 
+import std.math;
+
 /** GSL Integration wrapper
 
 This uses the QAGS rule, and returns a class with opApply defined on it, which integrates 
@@ -28,8 +30,18 @@ auto Integrate(P)(P* func, double epsabs=1.0e-10, double epsrel=1.0e-7, size_t w
 			gsl_integration_workspace_free (wk);
 		}
 
+		// If lo is infinite, integrate from -\infinity
+		// If hi is infinite, integrate to \infinity
 		double opCall(double lo, double hi) {
-			gsl_integration_qags(&ff, lo, hi, _epsabs, _epsrel, wksize, wk, &_result, &_abserr);
+			if (isInfinity(lo) && isInfinity(hi)) {
+				gsl_integration_qagi(&ff, _epsabs, _epsrel, wksize, wk, &_result, &_abserr);
+			} else if (isInfinity(lo)) {
+				gsl_integration_qagil(&ff, hi, _epsabs, _epsrel, wksize, wk, &_result, &_abserr);
+			} else if (isInfinity(hi)) {
+				gsl_integration_qagiu(&ff, lo, _epsabs, _epsrel, wksize, wk, &_result, &_abserr);
+			} else {
+				gsl_integration_qags(&ff, lo, hi, _epsabs, _epsrel, wksize, wk, &_result, &_abserr);
+			}
 			return _result;
 		}
 
@@ -58,7 +70,7 @@ auto Integrate(P)(P* func, double epsabs=1.0e-10, double epsrel=1.0e-7, size_t w
 }
 
 unittest {
-	import std.math, std.random;
+	import std.random;
 
 	import specd.specd;
 
@@ -86,5 +98,16 @@ unittest {
 			}
 		});
 
+	auto gauss = (double x) {return exp(-x*x);};
+	auto gaussint = Integrate(&gauss);
+	auto sqrtpi_2 = sqrt(PI)/2;
+ 	describe("gaussian integral")
+		.should("equal sqrt(pi)/2 from 0 to inf", gaussint(0,double.infinity).must.approxEqual(sqrtpi_2,1.0e-6))
+		.should("equal sqrt(pi)/2 from -inf to 0", gaussint(double.infinity,0).must.approxEqual(sqrtpi_2,1.0e-6))
+		.should("equal sqrt(pi) from -inf to inf", gaussint(double.infinity,double.infinity).must.approxEqual(sqrtpi_2*2,1.0e-6))
+		.should("equal sqrt(pi)/2 erf(1) from 0 to 1", gaussint(0,1).must.approxEqual(0.74682413281242702540,1.0e-6));
+
+
 
 }
+
