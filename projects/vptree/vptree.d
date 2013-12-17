@@ -14,7 +14,6 @@ The daughter nodes of the vp-tree are "inside" and "outside"; points inside are 
 the distance "dist" of the vantage point, otherwise the points are outside. Note that unlike
 a KDTree, the points outside are far less constrained.
 
-
 */
 
 module vptree;
@@ -31,12 +30,16 @@ private template hasDistance(P) {
 
 /** The central class of the vp-tree
 
-Note that if the node is a leaf, the vantage point may be set to garbage
-and the distance may or may not set. 
+The class is parametrized over a type P meant to represent a
+Point. This must define a method double dist(P) (or could be implemented via UFCS)
+that computes the distance. This separates the implementation of the tree from 
+the distance calculations.
 
 BUGS: 
-    Only a single random vantage point is used. 
-    The distance information, which would make this a vps-tree is ignored.
+	-- Note that if the node is a leaf, the vantage point may be set to garbage
+	   and the distance may or may not set. 
+    -- Only a single random vantage point is used. 
+    -- The distance information, which would make this a vps-tree is ignored.
 */
 class VPNode(P) 
 	if(hasDistance!P) 
