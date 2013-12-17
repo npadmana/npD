@@ -120,8 +120,8 @@ class VPNode(P)
 
 unittest {
 	import std.math, std.range, std.stdio;
+	import specd.specd;
 
-	
 	struct Point {
 		double x;
 
@@ -138,5 +138,29 @@ unittest {
 	}
 
 	auto root = new VPNode!Point(points);
+
+	describe("VPNode")
+		.should("root should be the same as input array", root.arr.must.be.sameAs(points))
+		.should("tree walks must satisfy many properties", (when) {
+			int ncount=0;
+			// Walk the tree and test :
+			//   -- that the vantage point does separate points as expected
+			//   -- the number of elements in the leaves agrees with what we sent in
+			//   -- that the ids are correctly set
+			foreach (n1; root) {
+				if (n1.isLeaf) {
+					ncount += n1.arr.length;
+				} else {
+					n1.inside.id.must.equal(2*n1.id+1);
+					n1.outside.id.must.equal(2*n1.id+2);
+					auto n1in = n1.inside.arr.length;
+					n1.inside.arr.must.be.sameAs(n1.arr[0..n1in]);
+					n1.outside.arr.must.be.sameAs(n1.arr[n1in..$]);
+				}
+			}
+			ncount.must.equal(n);
+		});
+
+	
 }
 
