@@ -9,18 +9,23 @@ import std.math;
 This uses the QAGS rule, and returns a class with opApply defined on it, which integrates 
 between a and b.
 
+We cache the function passed in, to allow this to be used in nested contexts. However, 
+if you get an unexplained segfault, this is what you should worry about.
+
 */
-auto Integrate(P)(P* func, double epsabs=1.0e-10, double epsrel=1.0e-7, size_t wksize=1000) {
+auto Integrate(P)(P func, double epsabs=1.0e-10, double epsrel=1.0e-7, size_t wksize=1000) {
 	class Integral {
+		private P func;
 		private gsl_function ff;
 		private gsl_integration_workspace* wk;
 		private double _result, _abserr;
 		private size_t wksize;
 		private double _epsabs, _epsrel;
 
-		this(P* func, size_t wksize, double epsabs,double epsrel) {
+		this(P func, size_t wksize, double epsabs,double epsrel) {
+			this.func = func;
 			this.wksize = wksize;
-			ff = make_gsl_function(func);
+			ff = make_gsl_function(&this.func);
 			wk = gsl_integration_workspace_alloc(wksize);
 			_epsrel = epsrel;
 			_epsabs = epsabs;
@@ -77,7 +82,7 @@ unittest {
 	auto ff = (double x) {return sin(x);};
 	auto epsabs = 1.0e-10;
 	auto epsrel = 1.0e-7;
-	auto cosx = Integrate(&ff,epsabs,epsrel);
+	auto cosx = Integrate(ff,epsabs,epsrel);
 
 	describe("cosx")
 		.should("have epsabs set",cosx.epsabs.must.equal(epsabs))
@@ -99,7 +104,7 @@ unittest {
 		});
 
 	auto gauss = (double x) {return exp(-x*x);};
-	auto gaussint = Integrate(&gauss);
+	auto gaussint = Integrate(gauss);
 	auto sqrtpi_2 = sqrt(PI)/2;
  	describe("gaussian integral")
 		.should("equal sqrt(pi)/2 from 0 to inf", gaussint(0,double.infinity).must.approxEqual(sqrtpi_2,1.0e-6))
@@ -109,5 +114,19 @@ unittest {
 
 
 
+	// ISSUE : npadmana/npD#20
+	// Fails on : d1ff8b735feb7343c3b703e7f72c8a6c6981dafb
+	describe("Integrate")
+		.should("should work in a nested context", (when) {
+			auto makefunc() {
+				auto ff = (double x) {return x;};
+				auto x2by2 = Integrate(ff); 
+				// Now return a function of Integrate (which runs the risk that ff goes out of scope)
+				return (double x) {return x2by2(0,x);};
+			}
+			auto test = makefunc();
+			test(2).must.approxEqual(2,2.0e-7);
+		});
+		
 }
 
