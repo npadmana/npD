@@ -19,38 +19,14 @@ struct SimpleLCDM {
 	}
 }
 
-T vectorize(alias ff, T) (T a) 
-	if (isScalarType!T || isArray!T)
-{
-	static if (isArray!T) {
-		auto resarr = new typeof(a[0])[a.length];
-		foreach (i, x; a) resarr[i] = ff(x);
-		return resarr;
-	} else {
-		return ff(a);
-	}
-}
-
 
 /// Comoving distance code
-T comDis(C,T)(C s, T a) 
+auto comDis(C)(C s) 
      if (is(typeof(s.hubble(1))==double))
-{
-	auto w = gsl_integration_workspace_alloc (1000) ;
-	scope(exit) gsl_integration_workspace_free(w);
-
+{	
 	auto fwrap = (double a) {return 1/(a*a*s.hubble(a));};
-	auto f = make_gsl_function(&fwrap);
-
-	
-	auto ff = (double x) {
-		double result, abserr;
-		gsl_integration_qag (&f, x, 1.0, 1.0e-14, 1.0e-7, 1000,
-                         	GSL_INTEG_GAUSS21, w, &result, &abserr);
-		return result;
-	};
-	return vectorize!ff(a);
-	
+	auto cdis = Integrate(fwrap);
+	return (double x) { return cdis(x,1);};
 }
 
 
@@ -62,22 +38,24 @@ unittest {
 
     describe("comdis")
     	.should("should return correct values", (when) {
-    		    auto eds = SimpleLCDM(1, 1);
+    		    auto c1 = SimpleLCDM(1, 1);
 				auto c_h0 = cLight_kms/100;
-				(c_h0*eds.comDis(0.5)).must.approxEqual(1756.1,0,0.1); // force comparison in absolute terms
-				eds = SimpleLCDM(0.7, 1);
-				(c_h0*eds.comDis(0.5)).must.approxEqual(2508.7,0,0.1); 
-				eds = SimpleLCDM(0.7, 0.3, 0.7);
-				(c_h0*eds.comDis(0.5)).must.approxEqual(2795.0,0,0.2); // off?????
-				eds = SimpleLCDM(0.7, 0.3);
-				(c_h0*eds.comDis(0.5)).must.approxEqual(3303.5,0,0.5); // off????
+				(c_h0*comDis(c1)(0.5)).must.approxEqual(1756.1,0,0.1); // force comparison in absolute terms
+				c1 = SimpleLCDM(0.7, 1);
+				(c_h0*comDis(c1)(0.5)).must.approxEqual(2508.7,0,0.1); 
+				c1 = SimpleLCDM(0.7, 0.3, 0.7);
+				(c_h0*comDis(c1)(0.5)).must.approxEqual(2795.0,0,0.2); // off?????
+				c1 = SimpleLCDM(0.7, 0.3);
+				(c_h0*comDis(c1)(0.5)).must.approxEqual(3303.5,0,0.5); // off????
     		})
-    	.should("accept array arguments", (when) {
-    			auto eds = SimpleLCDM(1, 1);
-				auto c_h0 = cLight_kms/100;
-				auto avals = [0.1,0.25,0.5,1].map!(z=>1/(1+z)).array;
+    	.should("using in an array context", (when) {
+    			auto c1 = SimpleLCDM(1, 1).comDis;
+				auto zvals = [0.1,0.25,0.5,1];
 				auto expected=[279.0, 633, 1100.2, 1756.1];
-				auto got = eds.comDis(avals).map!(x=>x*c_h0).array;
+
+				auto c_h0 = cLight_kms/100;
+				auto ff = (double z) { return c_h0*c1(1/(1+z));};
+				auto got = map!ff(zvals).array;
 				got.must.approxEqual(expected,0,0.1);
     		});
 
