@@ -19,13 +19,21 @@ struct SimpleLCDM {
 	}
 }
 
+// Simple mixin template to return a function that builds
+// the comoving distance integral. 
+// s is the cosmology, defined to have a hubble method.
+// Reduces some boiler plate code, and avoids nesting functions.
+mixin template ComDis() {
+	auto fwrap = (double a) {return 1/(a*a*s.hubble(a));};
+	auto cdis = Integrate(fwrap);	
+}
+
 
 /// Comoving distance code
 auto comDis(C)(C s) 
      if (is(typeof(s.hubble(1))==double))
 {	
-	auto fwrap = (double a) {return 1/(a*a*s.hubble(a));};
-	auto cdis = Integrate(fwrap);
+	mixin ComDis;	
 	return (double x) { return cdis(x,1);};
 }
 
