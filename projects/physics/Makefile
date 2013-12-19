@@ -1,7 +1,8 @@
-include ../../make.vars
+include ${NPD_DIR}/make.vars
 
 FILES=constants.d cosmo.d
 OBJS=${FILES:.d=.o}
+TEST=${NPD_DIR}/etc/test/testmain.d
 
 # all : ${GSLOBJS}
 # ifdef BUILDSHARED
@@ -12,9 +13,10 @@ OBJS=${FILES:.d=.o}
 
 
 unittests :
-	${DC} -c -unittest testmain.d -I.. -I${NPD_DIR}/include ${FILES} -ofphys_unittests.o
-	${CC} ${LFLAGS} -o phys_unittests.x phys_unittests.o -L${NPD_LIB} -lspecd -L${GSL_DIR}/lib -lgsl -lgslcblas -L${DMDDIR} ${PHOBOSLIB}
-	./phys_unittests.x
+	${DC} -c -unittest ${TEST} -I.. -I${NPD_DIR}/include ${FILES} -of${BUILDDIR}/phys_unittests.o
+	${CC} ${LFLAGS} -o ${BUILDDIR}/phys_unittests.x ${BUILDDIR}/phys_unittests.o \
+		-L${NPD_LIB} -lgsld -lspecd -L${GSL_DIR}/lib -lgsl -lgslcblas ${PHOBOSLIB}
+	${BUILDDIR}/phys_unittests.x
 
 
 cleaninstall :
@@ -23,7 +25,7 @@ cleaninstall :
 .SUFFIXES: .d .o
 
 .d.o :
-	${DC} -c -fPIC -I.. $<
+	${DC} ${DFLAGS} -I.. $<
 
 
 

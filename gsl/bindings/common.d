@@ -7,7 +7,7 @@ struct gsl_function {
 }
 
 // Helper functions for callbacks
-static double gslCallback(P) (double x, void *p) {
+double gslCallback(P) (double x, void *p) {
 	auto ff = *(cast(P*)(p));
 	return ff(x);
 }

@@ -1,8 +1,9 @@
 include ../make.vars
 
-GSLFILES=
+GSLFILES=integration.d histogram.d interpolation.d
 GSLOBJS=${GSLFILES:%.d=${BUILDDIR}/%.o}
 GSLBINDOBJS=ls bindings/${BUILDDIR}/*.o | grep -v unittests
+TEST=${NPD_DIR}/etc/test/testmain.d
 
 
 all : buildbindings ${GSLOBJS} 
@@ -14,10 +15,13 @@ else
 endif
 
 
-# unittests :
-# 	${DC} -c -unittest -main -I.. ${GSLFILES} -ofgsl_unittests.o
-# 	${CC} ${LFLAGS} -o gsl_unittests.x gsl_unittests.o  -L${GSL_DIR}/lib -lgsl -lgslcblas -L${DMDDIR} ${PHOBOSLIB}
-# 	./gsl_unittests.x
+unittests :
+	${DC} -c -unittest -I${NPD_DIR}/include ${GSLFILES} ${TEST} -of${BUILDDIR}/gsl_unittests.o
+	${CC} ${LFLAGS} -o ${BUILDDIR}/gsl_unittests.x ${BUILDDIR}/gsl_unittests.o  \
+		-L${NPD_LIB} -lgsld -L${GSL_DIR}/lib -lgsl -lgslcblas \
+		-lspecd ${PHOBOSLIB}
+	${BUILDDIR}/gsl_unittests.x
+
 
 cleaninstall :
 	-rm -f ${NPD_LIB}/libgsld.a
