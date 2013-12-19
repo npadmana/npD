@@ -6,16 +6,20 @@ import physics.constants;
 
 
 struct SimpleLCDM {
-	private double omh2, omkh2, omdeh2, hval;
+	private double _omh2, _omkh2, _omdeh2, _hval;
 	this(double hval, double OmM, double OmK=0) {
-		this.hval = hval;
-		omh2 = OmM*hval*hval;
-		omdeh2 = (1-OmM-OmK)*hval*hval;
-		omkh2 = OmK*hval*hval;
+		_hval = hval;
+		_omh2 = OmM*hval*hval;
+		_omdeh2 = (1-OmM-OmK)*hval*hval;
+		_omkh2 = OmK*hval*hval;
 	}
 
 	double hubble(double a) {
-		return sqrt(omh2/(a*a*a) + omkh2/(a*a) + omdeh2);
+		return sqrt(_omh2/(a*a*a) + _omkh2/(a*a) + _omdeh2);
+	}
+
+	@property ref double omkh2() {
+		return _omkh2;
 	}
 }
 
@@ -23,7 +27,7 @@ struct SimpleLCDM {
 // the comoving distance integral. 
 // s is the cosmology, defined to have a hubble method.
 // Reduces some boiler plate code, and avoids nesting functions.
-mixin template ComDis() {
+mixin template InjectComDis() {
 	auto fwrap = (double a) {return 1/(a*a*s.hubble(a));};
 	auto cdis = Integrate(fwrap);	
 }
@@ -33,9 +37,11 @@ mixin template ComDis() {
 auto comDis(C)(C s) 
      if (is(typeof(s.hubble(1))==double))
 {	
-	mixin ComDis;	
-	return (double x) { return cdis(x,1);};
+	mixin InjectComDis;	
+	return (double a) { return cdis(a,1);};
 }
+
+
 
 
 unittest {
@@ -66,5 +72,50 @@ unittest {
 				auto got = map!ff(zvals).array;
 				got.must.approxEqual(expected,0,0.1);
     		});
+
+}
+
+/// Proper motion distance 
+auto propmotDis(C)(C s) 
+	if (is(typeof(s.hubble(1))==double) && is(typeof(s.omkh2)==double))
+{
+	mixin InjectComDis;
+	double okh2 = s.omkh2; 
+	double sokh2 = sqrt(abs(okh2));
+	if (okh2 > 1.0e-5) {
+		double invsokh2 = 1/sokh2;
+		return (double a) { return invsokh2*sinh(sokh2*cdis(a,1));};
+	} else if (okh2 < -1.0e-5) {
+		double invsokh2 = 1/sokh2;
+		return (double a) { return invsokh2*sin(sokh2*cdis(a,1));};
+	} else {
+
+		return (double a) { 
+			double x = cdis(a,1); 
+			return x + okh2 * (x^^3)/3;
+		};
+	}
+}
+
+
+
+unittest {
+	import std.stdio, std.algorithm, std.array, std.string;
+	import specd.specd;
+
+	// Test this in the limit of no cosmological constant.
+	double _pmdis(double om, double z, double h) {
+		return 2*(2-om*(1-z) - (2-om)*sqrt(1+om*z))/(om*om*(1+z)*h);
+	}
+
+	foreach (omk; [-0.1,-1.0e-7,0,1.0e-7,0.1]) {
+		auto c1 = SimpleLCDM(1,1-omk,omk).propmotDis;
+		describe(format("in a Omk=%5.3e universe with no CC",omk)) 
+			.should("get the correct propmotdis", (when) {
+				c1(1/(1+0.1)).must.approxEqual(_pmdis(1-omk,0.1,1),1.0e-5);
+				c1(1/(1+0.7)).must.approxEqual(_pmdis(1-omk,0.7,1),1.0e-5);
+				c1(1/(1+1.0)).must.approxEqual(_pmdis(1-omk,1,1),1.0e-5);
+			});
+	}
 
 }
