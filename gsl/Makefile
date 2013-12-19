@@ -1,6 +1,6 @@
 include ../make.vars
 
-GSLFILES=integration.d histogram.d
+GSLFILES=integration.d histogram.d interpolation.d
 GSLOBJS=${GSLFILES:%.d=${BUILDDIR}/%.o}
 GSLBINDOBJS=ls bindings/${BUILDDIR}/*.o | grep -v unittests
 TEST=${NPD_DIR}/etc/test/testmain.d
