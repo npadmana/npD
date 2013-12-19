@@ -119,3 +119,36 @@ unittest {
 	}
 
 }
+
+/// Luminosity distance
+auto lumDis(C)(C s) 
+	if (is(typeof(s.hubble(1))==double) && is(typeof(s.omkh2)==double))
+{
+	auto pmot =propmotDis(s);
+	return (double a) {return pmot(a)/a;};
+}
+
+/// Angular Diameter distance
+auto angDis(C)(C s) 
+	if (is(typeof(s.hubble(1))==double) && is(typeof(s.omkh2)==double))
+{
+	auto pmot =propmotDis(s);
+	return (double a) {return pmot(a)*a;};
+}
+
+unittest {
+	import std.stdio, std.algorithm, std.array, std.string;
+	import specd.specd;
+
+	auto c_h0 = cLight_kms/100;
+
+	auto lum = SimpleLCDM(0.71,0.27).lumDis;
+	auto ang = SimpleLCDM(0.71,0.27).angDis;
+	describe("Testing Lum and Ang distances")
+		.should("get lumdis correct at z=3", 
+				(c_h0*lum(0.25)).must.approxEqual(25841.7,0.1))
+		.should("get angdis correct at z=3",
+				(c_h0*ang(0.25)).must.approxEqual(1615.1,0.1));
+
+}
+
