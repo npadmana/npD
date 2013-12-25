@@ -29,7 +29,7 @@ class IniFile {
 
 	// Access different keys
 	T get(T)(string param) {
-		static if (isArray!T) {
+		static if (isArray!T & (!isSomeString!T)) {  // Strings are arrays, but need to be specially handled
 			return to!T(ini[param].split);
 		}
 		return to!T(ini[param]);
@@ -54,6 +54,7 @@ unittest {
 	assert(approxEqual(ini.get!float("test"),3.1415926));
 	assert(ini.get!(int[])("test4")==[3,42,5]);
 	assert(ini.get!(string[])("test2")==["Hello","world!"]);
+	assert(ini.get!string("test2")=="Hello world!");
 	assert(ini.get!(int[])("arr")==[1,2,3,4,5]);
 	assert(ini.test("test4"));
 	assert(!ini.test("notakey"));
