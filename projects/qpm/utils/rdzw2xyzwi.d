@@ -1,4 +1,5 @@
 import std.algorithm, std.stdio, std.array, std.conv, std.math, std.string;
+import std.parallelism;
 
 import physics.cosmo, gsl.interpolation, ini;
 
@@ -81,7 +82,7 @@ void main(string[] args) {
 	auto jobs = filter!(a => startsWith(a,"job"))(ini.keys).array;
 
 
-	foreach (job1; jobs) {
+	foreach (job1; parallel(jobs,1)) {
 		auto fns = ini.get!(string[])(job1);
 		auto parr = read_rdzw(fns[0], zmin, zmax);
 		rdzw2xyzwi(dist, fkp, parr);
