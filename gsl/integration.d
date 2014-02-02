@@ -12,6 +12,9 @@ between a and b.
 We cache the function passed in, to allow this to be used in nested contexts. However, 
 if you get an unexplained segfault, this is what you should worry about.
 
+WARNING!!! Note that this is not thread-safe --- in particular, do not use it naively with std.parallelism.
+The unittest below shows you how you might do it. Effectively, you need separate copies of the integral. 
+
 */
 auto Integrate(P)(P func, double epsabs=1.0e-10, double epsrel=1.0e-7, size_t wksize=1000) {
 	class Integral {
@@ -128,5 +131,45 @@ unittest {
 			test(2).must.approxEqual(2,2.0e-7);
 		});
 		
+}
+
+
+// Test this code in a multi-threaded environment using parallelism
+// Note that this is not quite how you might want it to work, but it 
+// shows you how to implement it.
+unittest {
+	import std.random, std.parallelism;
+
+	import specd.specd;
+
+	auto ff = (double x) {return sin(x);};
+	auto epsabs = 1.0e-10;
+	auto epsrel = 1.0e-7;
+	auto cosx = Integrate(ff,epsabs,epsrel);
+	auto pool = new TaskPool(50);
+	scope(exit) pool.finish();
+	auto integrals = new typeof(cosx)[51];
+	foreach (ref i; integrals) {
+		i = Integrate(ff,epsabs,epsrel);
+	}
+
+
+	// ISSUE : npadmana/npD#27 (driven by npadmana/npD#26)
+	// Fails here : 771213b6c4e898bf3f426d591a94025674d46d97
+	describe("cosx")
+		.should("work under parallelism", (when) {
+			scope(exit) pool.finish(true);
+			auto arr = new double[1_000_000];
+			foreach(ref elem; pool.parallel(arr,1)) {
+				auto lo = uniform(0.0,1.0);
+				auto hi = uniform(0.0,2.0);
+				auto res = cos(lo)-cos(hi);
+				elem = integrals[pool.workerIndex](lo,hi)-res;	
+			}
+			foreach(x; arr) {
+				x.must.approxEqual(0,1.0e-10);
+			}	
+		});
+
 }
 
