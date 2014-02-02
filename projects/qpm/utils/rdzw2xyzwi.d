@@ -1,4 +1,5 @@
 import std.algorithm, std.stdio, std.array, std.conv, std.math, std.string;
+import std.typecons;
 import std.parallelism;
 
 import physics.cosmo, gsl.interpolation, ini;
@@ -29,7 +30,7 @@ Particle[] read_rdzw(string fn, double zmin, double zmax) {
 }
 
 
-Spline read_fkp(string fn, double P0) {
+auto read_fkp(string fn, double P0) {
 	double[] zarr, fkp;
 	auto ff = File(fn);
 	foreach (line; ff.byLine) {
@@ -41,8 +42,7 @@ Spline read_fkp(string fn, double P0) {
 		fkp ~= 1/(1+vals[1]*P0);
 	}
 
-	// Build a spline
-	return new Spline(zarr, fkp);
+	return tuple(zarr,fkp);
 }
 
 
@@ -74,15 +74,19 @@ void main(string[] args) {
 	auto P0 = ini.get!double("P0");
 	auto nzfn = ini.get!string("nzfn");
 
-	// Initialize
-	auto fkp = read_fkp(nzfn, P0);
-	auto dist = SimpleLCDM(1.0,Om).propmotDis;
 
 	// Get the list of jobs
 	auto jobs = filter!(a => startsWith(a,"job"))(ini.keys).array;
 
+	// Read the weights
+	auto fkptup = read_fkp(nzfn, P0);
+
 
 	foreach (job1; parallel(jobs,1)) {
+		// IMPORTANT --- put this internal to avoid races, especially with the integral in dist
+		auto fkp = new Spline(fkptup[]); 
+		auto dist = SimpleLCDM(1.0,Om).propmotDis;
+
 		auto fns = ini.get!(string[])(job1);
 		auto parr = read_rdzw(fns[0], zmin, zmax);
 		rdzw2xyzwi(dist, fkp, parr);
