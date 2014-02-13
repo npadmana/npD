@@ -392,6 +392,82 @@ unittest {
 	assert(approxEqual(pp.max, 0.0));
 }
 
+//*********************************************************************************
+// s-mu pair counting assuming plane parallel sky and periodic boundary conditions
+// mu is calculated relative to the z direction
+//*********************************************************************************
+
+// Define the s-mu paircounting for plane-parallel and periodic class
+class SMuPairCounterPeriodicPlaneParallel(P) : Histogram2D 
+if (isWeightedPoint!P) {
+
+	// Define the constructor
+	this(double smax, int ns, int nmu, double Lbox) {
+		// Set up the histogram 
+		super(ns,0.0,smax,nmu,0,1.0+1.0e-10); // Make sure 1 falls into the histogram
+		this.smax = smax;
+		this.ns = ns;
+		this.nmu = nmu;
+		this.Lbox = Lbox;
+		smax2 = smax*smax;
+	}
+
+	// Define a dup property
+	@property SMuPairCounterPeriodicPlaneParallel!P dup() {
+		return new SMuPairCounterPeriodicPlaneParallel!P(smax, ns, nmu);
+	}
+
+	// Accumulator
+	void accumulate(P) (P[] arr1, P[] arr2, double scale=1) {
+		double s1, s2, mu;
+		int imu, ins;
+		foreach (p1; arr1) {
+			foreach (p2; arr2) {
+				mu = 2*(p1.x*p2.x + p1.y*p2.y + p1.z*p2.z);
+				dz = p1.z - p2.z;
+				s2 = l1 - mu;
+
+				// Simple optimization here -- throw out self pairs
+				if ((s2 >= smax2) || (s2 < 1.0e-50)) continue;
+
+				s1 = sqrt(s2);
+				mu = dz/s1;
+				if (mu < 0) mu = -mu;
+				gsl_histogram2d_accumulate(hist, s1, mu, scale*p1.w*p2.w);
+
+			}
+		}
+	}
+
+	// The tree accumulator
+	mixin(treeAccumulateX);
+
+	// Accumulate in parallel
+	// This is the autoscale version
+	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers) {
+
+		mixin(makeWorkspace("SMuPairCounterPeriodicPlaneParallel"));
+		mixin(accumulateParallelX_autoscale);
+
+	}
+
+
+	// Accumulate in parallel
+	// This is the fixed scale version
+	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers, double scale) {
+
+		mixin(makeWorkspace("SMuPairCounterPeriodicPlaneParallel"));
+		mixin(accumulateParallelX_fixedscale);
+
+	}
+
+	private double smax,smax2,Lbox;
+	private int nmu, ns;
+}
+
+
+
+
 
 
 version(TESTMAIN) {
