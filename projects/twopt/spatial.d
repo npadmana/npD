@@ -200,23 +200,26 @@ struct minmaxDistPeriodic {
 		// x
 		dcen = _periodic(fabs(a.xcen-b.xcen),L);
 		dx = (a.dx + b.dx)*0.5;
-		dx = (dx > L/2) ? L/2 : dx;
 		if (dcen > dx) _min += (dcen-dx)^^2;
-		_max += (dcen+dx)^^2;
+		dx += dcen;
+		dx = (dx > L/2) ? L/2 : dx;		
+		_max += dx^^2;
 
 		// y
 		dcen = _periodic(fabs(a.ycen-b.ycen),L);
 		dx = (a.dy + b.dy)*0.5;
-		dx = (dx > L/2) ? L/2 : dx;
 		if (dcen > dx) _min += (dcen-dx)^^2;
-		_max += (dcen+dx)^^2;
+		dx += dcen;
+		dx = (dx > L/2) ? L/2 : dx;		
+		_max += dx^^2;
 
 		// z
 		dcen = _periodic(fabs(a.zcen-b.zcen),L);
 		dx = (a.dz + b.dz)*0.5;
-		dx = (dx > L/2) ? L/2 : dx;
 		if (dcen > dx) _min += (dcen-dx)^^2;
-		_max += (dcen+dx)^^2;
+		dx += dcen;
+		dx = (dx > L/2) ? L/2 : dx;		
+		_max += dx^^2;
 
 		return tuple(sqrt(_min), sqrt(_max));
 	}
@@ -225,6 +228,18 @@ struct minmaxDistPeriodic {
 
 unittest {
 	static assert(isBoundingBoxDist!(minmaxDistPeriodic(1)));
+}
+
+
+unittest {
+	BoundingBox a,b;
+	a.xcen = 0.25; a.ycen = 0.25; a.zcen=0.25;
+	a.dx = 0.5, a.dy=0.5, a.dz=0.5;
+	b.xcen = 0.75; b.ycen = 0.75; b.zcen=0.75;
+	b.dx = 0.5, b.dy=0.5, b.dz=0.5;
+	auto res = minmaxDistPeriodic(1)(a, b);
+	assert(approxEqual(res[0],0), "Min dist fails");
+	assert(approxEqual(res[1],sqrt(3.0)*0.5), "Max dist fails");
 }
 
 
