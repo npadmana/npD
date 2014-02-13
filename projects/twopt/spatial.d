@@ -1,6 +1,6 @@
 module spatial;
 
-import std.algorithm, std.range, std.math, std.random, std.stdio, std.typecons, std.stdio;
+import std.algorithm, std.range, std.math, std.random, std.stdio, std.typecons, std.stdio, std.exception;
 
 // The three directions -- typesafe 
 enum Direction {x,y,z};
@@ -189,13 +189,13 @@ unittest{
 }
 
 
-struct minmaxDistPeriodic {
+struct MinmaxDistPeriodic {
 	double L;
-	this(double L) {
-		this.L = L;
-	}
 
 	Tuple!(double, double) opCall(BoundingBox a, BoundingBox b) {
+		// Sanity
+		enforce(!isnan(L));
+
 		double _min=0.0, _max=0.0;
 		double dcen, dx;
 		// x
@@ -228,7 +228,8 @@ struct minmaxDistPeriodic {
 }
 
 unittest {
-	static assert(isBoundingBoxDist!(minmaxDistPeriodic(1)));
+	MinmaxDistPeriodic dfunc;
+	static assert(isBoundingBoxDist!(dfunc));
 }
 
 
@@ -238,7 +239,9 @@ unittest {
 	a.dx = 0.5, a.dy=0.5, a.dz=0.5;
 	b.xcen = 0.75; b.ycen = 0.75; b.zcen=0.75;
 	b.dx = 0.5, b.dy=0.5, b.dz=0.5;
-	auto res = minmaxDistPeriodic(1)(a, b);
+	MinmaxDistPeriodic dfunc;
+	dfunc.L = 1;
+	auto res = dfunc(a, b);
 	assert(approxEqual(res[0],0), "Min dist fails");
 	assert(approxEqual(res[1],sqrt(3.0)*0.5), "Max dist fails");
 }
