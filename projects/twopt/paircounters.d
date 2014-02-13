@@ -174,7 +174,10 @@ class Histogram2D {
 }
 
 
-// Mixins
+//*********************************************************************************
+// Mixins to help build paircounters
+//*********************************************************************************
+
 const char[] treeAccumulateX=r"
 	// Tree accumulate 
 	void accumulate(alias dist, P) (KDNode!P a, KDNode!P b) {
@@ -246,6 +249,12 @@ string makeWorkspace(string classname) {
 		}";
 	return format(str, classname);
 }
+
+//*********************************************************************************
+// s-mu pair counting 
+// This is also a useful template from which to build new paircounters.
+//*********************************************************************************
+
 
 
 // Define the s-mu paircounting class
