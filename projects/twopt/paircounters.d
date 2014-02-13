@@ -174,23 +174,17 @@ class Histogram2D {
 }
 
 // Define the s-mu paircounting class
-class SMuPairCounter(P) if (isWeightedPoint!P) {
+class SMuPairCounter(P) : Histogram2D 
+if (isWeightedPoint!P) {
 
 	// Define the constructor
 	this(double smax, int ns, int nmu) {
 		// Set up the histogram 
-		hist = gsl_histogram2d_alloc(ns, nmu);
-		gsl_histogram2d_set_ranges_uniform(hist, 0.0, smax, 0, 1.0+1.0e-10); // Make sure 1 falls into the histogram
+		super(ns,0.0,smax,nmu,0,1.0+1.0e-10); // Make sure 1 falls into the histogram
 		this.smax = smax;
 		this.ns = ns;
 		this.nmu = nmu;
 		smax2 = smax*smax;
-	}
-
-
-	// Destructor
-	~this() {
-		gsl_histogram2d_free(hist);
 	}
 
 	// Accumulator
@@ -331,102 +325,6 @@ class SMuPairCounter(P) if (isWeightedPoint!P) {
 		}
 	}
 
-
-
-	// Overload index
-	double opIndex(int i, int j) {
-		return gsl_histogram2d_get(hist, i, j);
-	}
-
-	// Overload +=
-	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="+") {
-		gsl_histogram2d_add(hist, rhs.hist);
-		return this;
-	} 
-
-	// Overload += for double
-	ref SMuPairCounter!P opOpAssign(string op) (double rhs) if (op=="+") {
-		gsl_histogram2d_shift(hist, rhs);
-		return this;
-	} 
-
-
-
-	// Overload -=
-	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="-") {
-		gsl_histogram2d_sub(hist, rhs.hist);
-		return this;
-	} 
-
-	// Overload *=
-	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="*") {
-		gsl_histogram2d_mul(hist, rhs.hist);
-		return this;
-	} 
-
-	// Overload /=
-	ref SMuPairCounter!P opOpAssign(string op) (SMuPairCounter!P rhs) if (op=="/") {
-		gsl_histogram2d_div(hist, rhs.hist);
-		return this;
-	} 
-
-
-	// Get the maximum value of the histogram
-	@property double max() {
-		return gsl_histogram2d_max_val(hist);
-	}
-
-	// Get the minimum value of the histogram
-	@property double min() {
-		return gsl_histogram2d_min_val(hist);
-	}
-
-	// Reset the histogram
-	void reset() {
-		gsl_histogram2d_reset(hist);
-	}
-
-
-	// Output to file 
-	void write(File ff) {
-		// Write out the bins in s
-		double lo, hi;
-		foreach (i; 0..ns) {
-			gsl_histogram2d_get_xrange(hist, i, &lo, &hi);
-			ff.writef("%.3f ",lo);
-		}
-		ff.writefln("%.3f",hi);
-		foreach (i; 0..nmu) {
-			gsl_histogram2d_get_yrange(hist, i, &lo, &hi);
-			ff.writef("%.3f ",lo);
-		}
-		ff.writefln("%.3f",hi);
-		foreach (i; 0..ns) {
-			foreach (j; 0..nmu) {
-				ff.writef("%25.15e ", this[i,j]);
-			}
-			ff.writeln();
-		}
-	}
-
-
-	version(MPI) {
-		void mpiReduce(int root, MPI_Comm comm) {
-			int rank;
-			rank = MPI_Comm_rank(comm, &rank);
-			if (rank == root) {
-				auto arr = new double[ns*nmu];
-				arr[] = hist.bin[0..ns*nmu];
-				MPI_Reduce(cast(void*)&arr[0],cast(void*)hist.bin, ns*nmu, MPI_DOUBLE, MPI_SUM, root, comm);
-			} else {
-				MPI_Reduce(cast(void*)hist.bin, null, ns*nmu, MPI_DOUBLE, MPI_SUM, root, comm);
-			}
-		}
-	}
-
-
-	//private double[] hist;
-	private gsl_histogram2d* hist;  
 	private double smax,smax2;
 	private int nmu, ns;
 }
