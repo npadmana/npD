@@ -188,6 +188,48 @@ unittest{
 }
 
 
+struct minmaxDistPeriodic {
+	double L;
+	this(double L) {
+		this.L = L;
+	}
+
+	Tuple!(double, double) opCall(BoundingBox a, BoundingBox b) {
+		double _min=0.0, _max=0.0;
+		double dcen, dx;
+		// x
+		dcen = _periodic(fabs(a.xcen-b.xcen),L);
+		dx = (a.dx + b.dx)*0.5;
+		dx = (dx > L/2) ? L/2 : dx;
+		if (dcen > dx) _min += (dcen-dx)^^2;
+		_max += (dcen+dx)^^2;
+
+		// y
+		dcen = _periodic(fabs(a.ycen-b.ycen),L);
+		dx = (a.dy + b.dy)*0.5;
+		dx = (dx > L/2) ? L/2 : dx;
+		if (dcen > dx) _min += (dcen-dx)^^2;
+		_max += (dcen+dx)^^2;
+
+		// z
+		dcen = _periodic(fabs(a.zcen-b.zcen),L);
+		dx = (a.dz + b.dz)*0.5;
+		dx = (dx > L/2) ? L/2 : dx;
+		if (dcen > dx) _min += (dcen-dx)^^2;
+		_max += (dcen+dx)^^2;
+
+		return tuple(sqrt(_min), sqrt(_max));
+	}
+
+}
+
+unittest {
+	static assert(isBoundingBoxDist!(minmaxDistPeriodic(1)));
+}
+
+
+
+
 class KDNode(P) if (isPoint!P) {
 	uint id;
 	P[] arr;
