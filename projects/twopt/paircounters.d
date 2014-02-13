@@ -60,6 +60,119 @@ void parallelAccHelper(H, P)(TaskPool pool, H store, P[] arr1, P[] arr2, double 
 	store[me].accumulate(arr1, arr2, scale);
 }
 
+// The 2D histogram code can be abstracted out of the original paircounter.
+class Histogram2D {
+
+	this(int nx, double xmin, double xmax, int ny, double ymin, double ymax) {
+		hist = gsl_histogram2d_alloc(nx, ny);
+		gsl_histogram2d_set_ranges_uniform(hist, xmin, xmax, ymin, ymax);
+		this.nx = nx;
+		this.ny = ny;
+	}
+
+	~this() {
+		gsl_histogram2d_free(hist);
+	}
+
+	// Overload index
+	double opIndex(int i, int j) {
+		return gsl_histogram2d_get(hist, i, j);
+	}
+
+	// Overload +=
+	ref Histogram2D opOpAssign(string op) (Histogram2D rhs) if (op=="+") {
+		gsl_histogram2d_add(hist, rhs.hist);
+		return this;
+	} 
+
+	// Overload += for double
+	ref Histogram2D opOpAssign(string op) (double rhs) if (op=="+") {
+		gsl_histogram2d_shift(hist, rhs);
+		return this;
+	} 
+
+
+
+	// Overload -=
+	ref Histogram2D opOpAssign(string op) (Histogram2D rhs) if (op=="-") {
+		gsl_histogram2d_sub(hist, rhs.hist);
+		return this;
+	} 
+
+	// Overload *=
+	ref Histogram2D opOpAssign(string op) (Histogram2D rhs) if (op=="*") {
+		gsl_histogram2d_mul(hist, rhs.hist);
+		return this;
+	} 
+
+	// Overload /=
+	ref Histogram2D opOpAssign(string op) (Histogram2D rhs) if (op=="/") {
+		gsl_histogram2d_div(hist, rhs.hist);
+		return this;
+	} 
+
+
+	// Get the maximum value of the histogram
+	@property double max() {
+		return gsl_histogram2d_max_val(hist);
+	}
+
+	// Get the minimum value of the histogram
+	@property double min() {
+		return gsl_histogram2d_min_val(hist);
+	}
+
+	// Reset the histogram
+	void reset() {
+		gsl_histogram2d_reset(hist);
+	}
+
+
+	// Output to file 
+	void write(File ff) {
+		// Write out the bins in s
+		double lo, hi;
+		foreach (i; 0..nx) {
+			gsl_histogram2d_get_xrange(hist, i, &lo, &hi);
+			ff.writef("%.3f ",lo);
+		}
+		ff.writefln("%.3f",hi);
+		foreach (i; 0..ny) {
+			gsl_histogram2d_get_yrange(hist, i, &lo, &hi);
+			ff.writef("%.3f ",lo);
+		}
+		ff.writefln("%.3f",hi);
+		foreach (i; 0..nx) {
+			foreach (j; 0..ny) {
+				ff.writef("%25.15e ", this[i,j]);
+			}
+			ff.writeln();
+		}
+	}
+
+
+	version(MPI) {
+		void mpiReduce(int root, MPI_Comm comm) {
+			int rank;
+			rank = MPI_Comm_rank(comm, &rank);
+			if (rank == root) {
+				auto arr = new double[nx*ny];
+				arr[] = hist.bin[0..nx*ny];
+				MPI_Reduce(cast(void*)&arr[0],cast(void*)hist.bin, nx*ny, MPI_DOUBLE, MPI_SUM, root, comm);
+			} else {
+				MPI_Reduce(cast(void*)hist.bin, null, nx*ny, MPI_DOUBLE, MPI_SUM, root, comm);
+			}
+		}
+	}
+
+
+	//private double[] hist;
+	private gsl_histogram2d* hist; 
+	private int nx, ny; 
+
+
+}
+
 // Define the s-mu paircounting class
 class SMuPairCounter(P) if (isWeightedPoint!P) {
 
