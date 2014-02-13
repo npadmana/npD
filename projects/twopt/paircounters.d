@@ -1,6 +1,6 @@
 module paircounters;
 
-import std.stdio, std.math, std.conv, std.parallelism;
+import std.stdio, std.math, std.conv, std.parallelism, std.string;
 import gsl.histogram, spatial;
 
 // Make an MPI-supported version
@@ -173,6 +173,81 @@ class Histogram2D {
 
 }
 
+
+// Mixins
+const char[] treeAccumulateX=r"
+	// Tree accumulate 
+	void accumulate(alias dist, P) (KDNode!P a, KDNode!P b) {
+		auto isauto = a is b;
+		double scale;
+		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
+		foreach(a1, b1; walker) {
+			if (isauto && (a.id > b.id)) continue;
+			if (isauto && (a.id < b.id)) {
+				scale = 2.0;
+			} else {
+				scale = 1.0;
+			}
+			accumulate(a1.arr, b1.arr, scale);
+		}
+	}";
+
+const char[] accumulateParallelX_autoscale=r"
+		auto isauto = a is b;
+		double scale;
+		// Create a new taskPool
+		auto pool = new TaskPool(nworkers);
+
+		//auto isauto = a is b;  // Auto-correlations
+		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
+		foreach(a1, b1; walker) {
+			// NOTE : This optimization is why we have two versions of this function, one
+			// with a fixed scale and one without. 
+			// DO NOT MERGE THESE ROUTINES WITHOUT CAREFULLY THINKING.
+			if (isauto && (a.id > b.id)) continue;  
+			if (isauto && (a.id < b.id)) {
+				scale = 2.0;
+			} else {
+				scale = 1.0;
+			}
+			auto t = task!(parallelAccHelper!(typeof(store),P))(pool, store, a1.arr, b1.arr, scale);
+			pool.put(t);
+		}
+
+		pool.finish(true);
+
+		foreach (h1; store) {
+			this += h1;
+		}";
+
+
+const char[] accumulateParallelX_fixedscale=r"
+		// Create a new taskPool
+		auto pool = new TaskPool(nworkers);
+
+		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
+		foreach(a1, b1; walker) {
+			auto t = task!(parallelAccHelper!(typeof(store),P))(pool, store, a1.arr, b1.arr, scale);
+			pool.put(t);
+		}
+
+		pool.finish(true);
+
+		foreach (h1; store) {
+			this += h1;
+		}";
+
+string makeWorkspace(string classname) {
+	const char[] str = r"
+		// This part of the code is changed, based on type
+		auto store = new %s!(P)[nworkers+1];
+		foreach (ref h1; store) {
+			h1 = this.dup;
+		}";
+	return format(str, classname);
+}
+
+
 // Define the s-mu paircounting class
 class SMuPairCounter(P) : Histogram2D 
 if (isWeightedPoint!P) {
@@ -186,6 +261,13 @@ if (isWeightedPoint!P) {
 		this.nmu = nmu;
 		smax2 = smax*smax;
 	}
+
+	// Define a dup property
+	@property SMuPairCounter!P dup() {
+		return new SMuPairCounter!P(smax, ns, nmu);
+	}
+
+
 
 	// Accumulator
 	void accumulate_reference(P) (P[] arr1, P[] arr2, double scale=1) {
@@ -250,79 +332,26 @@ if (isWeightedPoint!P) {
 		}
 	}
 
-
-	// Tree accumulate 
-	void accumulate(alias dist, P) (KDNode!P a, KDNode!P b) {
-		auto isauto = a is b;
-		double scale;
-		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
-		foreach(a1, b1; walker) {
-			if (isauto && (a.id > b.id)) continue;
-			if (isauto && (a.id < b.id)) {
-				scale = 2.0;
-			} else {
-				scale = 1.0;
-			}
-			accumulate(a1.arr, b1.arr, scale);
-		}
-	}
-
+	// The tree accumulator
+	mixin(treeAccumulateX);
 
 	// Accumulate in parallel
+	// This is the autoscale version
 	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers) {
-		auto isauto = a is b;
-		double scale;
 
-		auto store = new SMuPairCounter!(P)[nworkers+1];
-		foreach (ref h1; store) {
-			h1 = new SMuPairCounter!P(smax, ns, nmu);
-		}
+		mixin(makeWorkspace("SMuPairCounter"));
+		mixin(accumulateParallelX_autoscale);
 
-		// Create a new taskPool
-		auto pool = new TaskPool(nworkers);
-
-		//auto isauto = a is b;  // Auto-correlations
-		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
-		foreach(a1, b1; walker) {
-			if (isauto && (a.id > b.id)) continue;
-			if (isauto && (a.id < b.id)) {
-				scale = 2.0;
-			} else {
-				scale = 1.0;
-			}
-			auto t = task!(parallelAccHelper!(typeof(store),P))(pool, store, a1.arr, b1.arr, scale);
-			pool.put(t);
-		}
-
-		pool.finish(true);
-
-		foreach (h1; store) {
-			this += h1;
-		}
 	}
 
 
 	// Accumulate in parallel
+	// This is the fixed scale version
 	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers, double scale) {
-		auto store = new SMuPairCounter!(P)[nworkers+1];
-		foreach (ref h1; store) {
-			h1 = new SMuPairCounter!P(smax, ns, nmu);
-		}
 
-		// Create a new taskPool
-		auto pool = new TaskPool(nworkers);
+		mixin(makeWorkspace("SMuPairCounter"));
+		mixin(accumulateParallelX_fixedscale);
 
-		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
-		foreach(a1, b1; walker) {
-			auto t = task!(parallelAccHelper!(typeof(store),P))(pool, store, a1.arr, b1.arr, scale);
-			pool.put(t);
-		}
-
-		pool.finish(true);
-
-		foreach (h1; store) {
-			this += h1;
-		}
 	}
 
 	private double smax,smax2;
