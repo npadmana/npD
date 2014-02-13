@@ -8,6 +8,7 @@ struct Particle {
 	double x,y,z,w, x2;
 }
 
+// Needs to be global. Ugly!
 MinmaxDistPeriodic distFunc;
 
 void main(string[] args) {
