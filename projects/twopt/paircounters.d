@@ -414,19 +414,27 @@ if (isWeightedPoint!P) {
 
 	// Define a dup property
 	@property SMuPairCounterPeriodicPlaneParallel!P dup() {
-		return new SMuPairCounterPeriodicPlaneParallel!P(smax, ns, nmu);
+		return new SMuPairCounterPeriodicPlaneParallel!P(smax, ns, nmu, Lbox);
 	}
 
 	// Accumulator
 	void accumulate(P) (P[] arr1, P[] arr2, double scale=1) {
-		double s1, s2, mu;
+		double s1, s2, dz, mu;
 		int imu, ins;
 		foreach (p1; arr1) {
 			foreach (p2; arr2) {
-				mu = 2*(p1.x*p2.x + p1.y*p2.y + p1.z*p2.z);
-				dz = p1.z - p2.z;
-				s2 = l1 - mu;
+				// x
+				dz = _periodic(p1.x - p2.x, Lbox);
+				s2 = dz*dz;
 
+				// y
+				dz = _periodic(p1.y - p2.y, Lbox);
+				s2 += dz*dz;
+
+				// x
+				dz = _periodic(p1.z - p2.z, Lbox);
+				s2 += dz*dz;
+				
 				// Simple optimization here -- throw out self pairs
 				if ((s2 >= smax2) || (s2 < 1.0e-50)) continue;
 
@@ -464,6 +472,22 @@ if (isWeightedPoint!P) {
 	private double smax,smax2,Lbox;
 	private int nmu, ns;
 }
+
+
+unittest {
+	struct Particle {
+		double x, y, z, w, x2;
+	}
+	auto pp = new SMuPairCounterPeriodicPlaneParallel!Particle(3, 6, 4, 5);
+	auto p1 = [Particle(0.5,0,0,1.5), Particle(4.7,0,0,2), Particle(0.5,4,1,1)];
+	setMagnitudePoint(p1);
+	pp.accumulate(p1,p1);
+	pp.write(stdout);
+	assert(approxEqual(pp[1,0],6,1.0e-5,1.0e-10));
+	assert(approxEqual(pp[2,2],3,1.0e-5,1.0e-10));
+	assert(approxEqual(pp[3,2],4,1.0e-5,1.0e-10));
+}
+
 
 
 
