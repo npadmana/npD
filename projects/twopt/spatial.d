@@ -179,6 +179,7 @@ unittest {
 }
 
 double _periodic(double x, double L) {
+	x = fabs(x);
 	return (x > L/2) ? L-x : x; 
 }
 
@@ -198,7 +199,7 @@ struct minmaxDistPeriodic {
 		double _min=0.0, _max=0.0;
 		double dcen, dx;
 		// x
-		dcen = _periodic(fabs(a.xcen-b.xcen),L);
+		dcen = _periodic(a.xcen-b.xcen,L);
 		dx = (a.dx + b.dx)*0.5;
 		if (dcen > dx) _min += (dcen-dx)^^2;
 		dx += dcen;
@@ -206,7 +207,7 @@ struct minmaxDistPeriodic {
 		_max += dx^^2;
 
 		// y
-		dcen = _periodic(fabs(a.ycen-b.ycen),L);
+		dcen = _periodic(a.ycen-b.ycen,L);
 		dx = (a.dy + b.dy)*0.5;
 		if (dcen > dx) _min += (dcen-dx)^^2;
 		dx += dcen;
@@ -214,7 +215,7 @@ struct minmaxDistPeriodic {
 		_max += dx^^2;
 
 		// z
-		dcen = _periodic(fabs(a.zcen-b.zcen),L);
+		dcen = _periodic(a.zcen-b.zcen,L);
 		dx = (a.dz + b.dz)*0.5;
 		if (dcen > dx) _min += (dcen-dx)^^2;
 		dx += dcen;
