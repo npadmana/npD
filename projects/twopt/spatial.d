@@ -178,6 +178,14 @@ unittest {
 	assert(approxEqual(res[1],sqrt(3.0)*1.5), "Max dist fails");
 }
 
+double _periodic(double x, double L) {
+	return (x > L/2) ? L-x : x; 
+}
+
+unittest{
+	assert(approxEqual(_periodic(0.2,1),0.2),"_periodic fails");
+	assert(approxEqual(_periodic(0.7,1),0.3),"_periodic fails");
+}
 
 
 class KDNode(P) if (isPoint!P) {
