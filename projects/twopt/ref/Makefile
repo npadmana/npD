@@ -1,7 +1,7 @@
 include ../../../make.vars
 
 DFILES=../paircounters.d ../spatial.d
-SRCS=smu_test_optimize2.d smu_test_optimize1.d smu_ref.d smu_test_mt.d
+SRCS=smu_test_optimize2.d smu_test_optimize1.d smu_ref.d smu_test_mt.d smu_ppp_ref.d
 EXECS=${SRCS:%.d=${BUILDDIR}/%.x}
 GSLLINK=-L${GSL_DIR}/lib -lgsl -lgslcblas 
 
