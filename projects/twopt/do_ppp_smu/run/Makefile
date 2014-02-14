@@ -20,5 +20,9 @@ reference : ${BUILDDIR}/smu_ppp_ref.x
 	${BUILDDIR}/smu_ppp_ref.x 10000
 
 
+wipe :
+	-rm -f corr*.dat
+
+
 # Clean up
 include ${NPD_DIR}/make.clean.inc
