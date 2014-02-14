@@ -66,10 +66,12 @@ void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf) {
 	Particle[] darr, rarr;
 	foreach (dfn, rfn; lockstep(dfns, rfns)) {
 		darr = readFile(dfn);
-		if (rfn != rfn_save) rarr = readFile(rfn);
-		rfn_save = rfn;
 		dbuf.push(darr);
-		rbuf.push(rarr);
+		if (rfn != "-") {
+			if (rfn != rfn_save) rarr = readFile(rfn);
+			rfn_save = rfn;
+			rbuf.push(rarr);
+		}
 		send(ownerTid, true);
 		flag = receiveOnly!bool();
 	}
@@ -129,46 +131,51 @@ void main(char[][] args) {
 	}
 
 	// Loop over jobs
-	bool noRR;
+	bool noRR, noDR; // noDR implies noRR and is set by setting the R filename to -
 	StopWatch sw;
 	foreach (job1; jobs) {
 		MPI_Barrier(MPI_COMM_WORLD);
+		noDR=false; // reset
 		sw.reset(); sw.start();
 		auto params = ini.get!(string[])(job1);
 		if (params.length < 3) throw new Exception("job specs need at least three parameters");
 		if ((params.length > 3) && (params[3]=="noRR")) noRR=true; else noRR=false;
+		if (params[1]=="-") {
+			noRR = true;
+			noDR = true;
+		}
 
 		if (rank==0) {
-			writef("%s : Processing D=%s and D=%s to %s-{norm,DD,DR",job1, params[0],params[1],params[2]);
+			writef("%s : Processing D=%s and R=%s to %s-{norm,DD,DR",job1, params[0],params[1],params[2]);
 			if (!noRR) write(",RR");
 			writeln("}.dat .....");
 
 			flag = receiveOnly!bool();
 			darr = dbuf.pop;
-			rarr = rbuf.pop;
+			if (!noDR) rarr = rbuf.pop;
 			send(readerTid, true);
 
 			writefln("%s : Data read in.....", job1);
 
 			randomShuffle(darr);
-			randomShuffle(rarr);
+			if (!noDR) randomShuffle(rarr);
 			writefln("%s : Data shuffled....", job1);
 
 			// Write the norm file here!
 			auto fnorm = File(params[2]~"-norm.dat","w");
 			fnorm.writefln("%s: %20.15e",params[0],sumOfWeights(darr));
-			fnorm.writefln("%s: %20.15e",params[1],sumOfWeights(rarr));
+			if (!noDR) fnorm.writefln("%s: %20.15e",params[1],sumOfWeights(rarr));
 		}
 
 		// Build trees
 		
 		// Broadcast
 		Bcast(darr, 0, MPI_COMM_WORLD);
-		Bcast(rarr, 0, MPI_COMM_WORLD);
+		if (!noDR) Bcast(rarr, 0, MPI_COMM_WORLD);
 
 		// Split
 		dsplit = Split(darr, MPI_COMM_WORLD);
-		rsplit = Split(rarr, MPI_COMM_WORLD);
+		if (!noDR) rsplit = Split(rarr, MPI_COMM_WORLD);
 
 		if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1, sw.peek.seconds);
 
@@ -176,8 +183,10 @@ void main(char[][] args) {
 		foreach (i, a1; parallel(dsplit,1)) {
 			droot[i] = new KDNode!Particle(a1, 0, minPart);
 		}
-		foreach (i, a1; parallel(rsplit, 1)) {
-			rroot[i] = new KDNode!Particle(a1, 0, minPart);
+		if (!noDR) {
+			foreach (i, a1; parallel(rsplit, 1)) {
+				rroot[i] = new KDNode!Particle(a1, 0, minPart);
+			}
 		}
 		if (rank==0) writefln("%s : Elapsed time after building trees (in sec): %s",job1, sw.peek.seconds);
 
@@ -208,6 +217,7 @@ void main(char[][] args) {
 		}
 
 		// DR 
+		if (noDR) continue;
 		computeCorr(droot, rroot);
 		if (rank==0) {
 			PP.write(File(params[2]~"-DR.dat","w"));
