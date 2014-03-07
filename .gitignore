@@ -2,6 +2,7 @@
 lib
 sandbox
 build
+local
 
 # Ignore specialized make.vars
 make.vars
