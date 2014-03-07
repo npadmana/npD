@@ -489,6 +489,108 @@ unittest {
 }
 
 
+//*********************************************************************************
+// rp-pi pair counting 
+// This is also a useful template from which to build new paircounters.
+//*********************************************************************************
+
+
+
+// Define the s-mu paircounting class
+class PerpParPairCounter(P) : Histogram2D 
+if (isWeightedPoint!P) {
+
+	// Define the constructor
+	this(double perpmax, double parmax, int nperp, int npar) {
+		// Set up the histogram 
+		super(nperp,0.0,perpmax,npar,0,parmax); // Make sure 1 falls into the histogram
+		this.perpmax = perpmax;
+		this.nperp = nperp;
+		this.parmax = parmax;
+		this.npar = npar;
+		smax2 = perpmax^^2 + parmax^^2;
+	}
+
+	// Define a dup property
+	@property PerpParPairCounter!P dup() {
+		return new PerpParPairCounter!P(perpmax, parmax, nperp, npar);
+	}
+
+
+	// Accumulator, optimized
+	void accumulate(P) (P[] arr1, P[] arr2, double scale=1) {
+		double l1, s2, l2, sl, mu, rp, rll;
+		int imu, ins;
+		foreach (p1; arr1) {
+			foreach (p2; arr2) {
+				mu = 2*(p1.x*p2.x + p1.y*p2.y + p1.z*p2.z);
+				sl = p1.x2 - p2.x2;
+				l1 = p1.x2 + p2.x2;
+				s2 = l1 - mu;
+				l2 = l1 + mu;
+
+				// Simple optimization here -- throw out self pairs
+				if ((s2 >= smax2) || (s2 < 1.0e-50)) continue;
+
+				rll = sl/sqrt(l2);
+				rp = sqrt(s2 - rll^^2);
+				if (rll < 0) rll = -rll;
+				gsl_histogram2d_accumulate(hist, rp, rll, scale*p1.w*p2.w);
+
+			}
+		}
+	}
+
+	// The tree accumulator
+	mixin(treeAccumulateX);
+
+	// Accumulate in parallel
+	// This is the autoscale version
+	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers) {
+
+		mixin(makeWorkspace("SMuPairCounter"));
+		mixin(accumulateParallelX_autoscale);
+
+	}
+
+
+	// Accumulate in parallel
+	// This is the fixed scale version
+	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers, double scale) {
+
+		mixin(makeWorkspace("SMuPairCounter"));
+		mixin(accumulateParallelX_fixedscale);
+
+	}
+
+	private double perpmax, parmax,smax2;
+	private int nperp, npar;
+}
+
+unittest {
+	struct Particle {
+		double x, y, z, w, x2;
+	}
+	auto pp = new PerpParPairCounter!Particle(10,10,5,10);
+	auto p1 = [Particle(1,1,1,1.5), Particle(2,2,2,2)];
+	setMagnitudePoint(p1);
+	pp.accumulate(p1,p1);
+	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));
+	assert(approxEqual(pp[0,1],6,1.0e-5,1.0e-10));
+	auto p2 = [Particle(-2.5,1,0,1), Particle(2.5,1,0,3)];
+	setMagnitudePoint(p2);
+	pp.accumulate(p2,p2,2);
+	pp.write(stdout);
+	assert(approxEqual(pp[0,0],0,1.0e-5,1.0e-10));
+	assert(approxEqual(pp[2,0],12,1.0e-5,1.0e-10));
+
+	// Test subtraction and addition
+	pp += pp;
+	assert(approxEqual(pp[2,0],24,1.0e-5,1.0e-10));
+	pp -= pp;
+	assert(approxEqual(pp.min, 0.0));
+	assert(approxEqual(pp.max, 0.0));
+}
 
 
 
