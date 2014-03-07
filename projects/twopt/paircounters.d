@@ -509,6 +509,7 @@ if (isWeightedPoint!P) {
 		this.parmax = parmax;
 		this.npar = npar;
 		smax2 = perpmax^^2 + parmax^^2;
+		smax = sqrt(smax);
 	}
 
 	// Define a dup property
@@ -548,7 +549,7 @@ if (isWeightedPoint!P) {
 	// This is the autoscale version
 	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers) {
 
-		mixin(makeWorkspace("SMuPairCounter"));
+		mixin(makeWorkspace("PerpParPairCounter"));
 		mixin(accumulateParallelX_autoscale);
 
 	}
@@ -558,12 +559,12 @@ if (isWeightedPoint!P) {
 	// This is the fixed scale version
 	void accumulateParallel(alias dist, P) (KDNode!P a, KDNode!P b, int nworkers, double scale) {
 
-		mixin(makeWorkspace("SMuPairCounter"));
+		mixin(makeWorkspace("PerpParPairCounter"));
 		mixin(accumulateParallelX_fixedscale);
 
 	}
 
-	private double perpmax, parmax,smax2;
+	private double perpmax, parmax, smax, smax2;
 	private int nperp, npar;
 }
 
