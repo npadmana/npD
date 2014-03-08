@@ -1,0 +1,3 @@
+[submodule "external/specd"]
+	path = external/specd
+	url = https://npadmana@github.com/npadmana/specd.git
