@@ -1,6 +1,6 @@
-import std.stdio, std.file, std.typecons;
-import sqlite;
-import etc.c.sqlite3;
+import std.stdio, std.file;
+import d2sqlite3;
+
 
 void main() {
 	// Erase the database file if it exists
@@ -8,18 +8,10 @@ void main() {
 		std.file.remove("example.db");
 	}
 
-	// Open database, set up close sequence
-	sqlite3 *db;
-	auto dbret = sqlite3_open("example.db",&db);
-	scope(exit) {
-		dbret=sqlite3_close(db);
-		if (dbret != SQLITE_OK) throw new Exception("Error closing the SQLite database");
-	}
-	if (dbret!=SQLITE_OK) throw new Exception("Error opening the SQLite database");
-
+	auto db = Database("example.db");
 
 	// Create a table 
-	simpleExec(db, r"
+	db.execute(r"
 	create table eg1 (
 		n INTEGER,
 		npi REAL,
@@ -27,47 +19,43 @@ void main() {
 		blobby BLOB
 	);");
 
-
-	// Test simple insert, commented out but you get the idea
-	//simpleExec(db,`insert into eg1 VALUES (0, 0, "hello world", "blobby")`);
-
 	{
 		// Begin transaction
-		simpleExec(db,"begin transaction");
+		db.execute("begin transaction");
 		
 		// Prepare statement
 		auto sql=r"insert into eg1 VALUES (?,?,?,?)";
 		auto text="Hello world";
 		double[] blob=[1,2,3];
-		auto stmt = new SL3statement(db, sql);
 
+		auto query = db.query(sql);
 		foreach(i; 1..10) {
 			foreach (ref x; blob) x *= i;
-			stmt.bindmany(tuple(1,i), tuple(2,3.1415*i), tuple(3,text), tuple(4,blob));
-			if (stmt.step() != SQLITE_DONE) throw new Exception("Error writing");
-			stmt.reset();
+			query.params.bind(1,i)
+				 		.bind(2,i*3.1415)
+				 		.bind(3,text)
+				 		.bind(4,blob);
+			query.execute();
+			query.reset();
 		}
 
 		// End transaction
-		simpleExec(db,"end transaction");
-		stmt.finalize();
+		db.execute("end transaction");
 	}
 
 	{
 		// Prepare statement
 		auto sql=r"select * from eg1";
-		auto stmt = new SL3statement(db, sql);
+		auto query = db.query(sql);
 
-		foreach(irow; stmt) {
-			writeln(irow.get!int(0));
-			writeln(irow.get!double(1));
-			writeln(irow.get!(char[])(2));
-			writeln(irow.get!(double[])(3));
+		foreach(row; query.rows) {
+			writeln(row[0].get!int(0));
+			writeln(row["npi"].get!double());
+			writeln(row[2].get!(char[])());
+			writeln(row.blobby.get!(double[])());
 			writeln;
 		}
 
-		// End transaction
-		stmt.finalize();
 	}
 
 

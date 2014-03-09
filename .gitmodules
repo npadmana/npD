@@ -1,3 +1,6 @@
 [submodule "external/specd"]
 	path = external/specd
 url=git@github.com:npadmana/specd.git
+[submodule "external/d2sqlite3"]
+	path = external/d2sqlite3
+	url = git@github.com:npadmana/d2sqlite3.git
