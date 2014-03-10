@@ -501,20 +501,49 @@ class PerpParPairCounter(P) : Histogram2D
 if (isWeightedPoint!P) {
 
 	// Define the constructor
-	this(double perpmax, double parmax, int nperp, int npar) {
-		// Set up the histogram 
-		super(nperp,0.0,perpmax,npar,0,parmax); // Make sure 1 falls into the histogram
+	this(double perpmax, double parmax, int nperp, int npar, double perpmin=0.0, double parmin=0.0, bool logperp=false, bool logpar=false) {
+		// Cache inputs
 		this.perpmax = perpmax;
 		this.nperp = nperp;
 		this.parmax = parmax;
 		this.npar = npar;
+		this.perpmin = perpmin;
+		this.parmin = parmin;
+		this.logperp = logperp;
+		this.logpar = logpar;
+
+		// Derived quantities
 		smax2 = perpmax^^2 + parmax^^2;
 		smax = sqrt(smax);
+
+		// Work out boundaries -- the histogram will always assume uniform boundaries, so this 
+		// is a simple check
+		double xmin,xmax,ymin,ymax;
+		if (logperp) {
+			xmin = log10(this.perpmin);
+			xmax = log10(this.perpmax);
+		} else {
+			xmin = this.perpmin;
+			xmax = this.perpmax;
+		}
+
+		if (logpar) {
+			ymin = log10(this.parmin);
+			ymax = log10(this.parmax);
+		} else {
+			ymin = this.parmin;
+			ymax = this.parmax;
+		}
+
+
+		// Set up the histogram 
+		super(nperp,xmin,xmax,npar,ymin,ymax); // Make sure 1 falls into the histogram
+		
 	}
 
 	// Define a dup property
 	@property PerpParPairCounter!P dup() {
-		return new PerpParPairCounter!P(perpmax, parmax, nperp, npar);
+		return new PerpParPairCounter!P(perpmax, parmax, nperp, npar, perpmin, parmin, logperp, logpar);
 	}
 
 
@@ -536,6 +565,8 @@ if (isWeightedPoint!P) {
 				rll = sl/sqrt(l2);
 				rp = sqrt(s2 - rll^^2);
 				if (rll < 0) rll = -rll;
+				if (logperp) rp = log10(rp);
+				if (logpar) rll = log10(rll);
 				gsl_histogram2d_accumulate(hist, rp, rll, scale*p1.w*p2.w);
 
 			}
@@ -564,8 +595,12 @@ if (isWeightedPoint!P) {
 
 	}
 
-	private double perpmax, parmax, smax, smax2;
-	private int nperp, npar;
+	private {
+		double perpmax, parmax, perpmin, parmin, smax, smax2;
+		int nperp, npar;
+		bool logperp, logpar;
+	}
+
 }
 
 unittest {

@@ -94,7 +94,11 @@ void main(char[][] args) {
 	auto nperp = ini.get!int("nperp");
 	auto npar = ini.get!int("npar");
 	auto perpmax = ini.get!double("perpmax");
+	auto perpmin = ini.get!double("perpmin");
+	auto logperp = (ini.get!int("logperp")) != 0;
 	auto parmax = ini.get!double("parmax");
+	auto parmin = ini.get!double("parmin");
+	auto logpar = (ini.get!int("logpar")) != 0;
 	auto minPart = ini.get!uint("minPart");
 
 	// Parallel or not
@@ -105,7 +109,7 @@ void main(char[][] args) {
 	sort(jobs);
 
 	// Initial paircounters 
-	auto PP = new PerpParPairCounter!Particle(perpmax, parmax, nperp, npar);
+	auto PP = new PerpParPairCounter!Particle(perpmax, parmax, nperp, npar, perpmin, parmin, logperp, logpar);
 
 	Particle[] darr, rarr;
 	Particle[][] dsplit, rsplit;
