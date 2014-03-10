@@ -2,30 +2,8 @@ module ini;
 
 import std.algorithm, std.conv, std.stdio, std.string, std.array, std.traits,std.math;
 
-// Handler for IniFiles.
-//
-// The inifile syntax is <keyword>=<value>. Whitespace surrounding the "=" will be stripped away.
-class IniFile {
-
-	// Constructor
-	this(string fn) {
-		int ndx;
-		auto f = File(fn);
-		foreach(line; f.byLine()) {
-			// strip out comments and leading and trailing whitespace
-			auto tmp = line.until('#').array.strip;
-			if (tmp.length == 0) continue;
-			auto res = tmp.findSplit("=");
-			if (res[1] != "=") throw new Exception(format("No = found in %s",line));
-			auto key = to!string(res[0].strip);
-			if (key in ini) {
-				ini[key] ~= ' ' ~ to!string(res[2].strip);
-			} else {
-				ini[key] = to!string(res[2].strip);
-			}
-			
-		}
-	}
+// Abstract class for inifiles
+abstract class IniBase {
 
 	// Access different keys
 	T get(T)(string param) {
@@ -46,6 +24,34 @@ class IniFile {
 	} 
 
 	private string[string] ini;
+}
+
+
+
+// Handler for IniFiles.
+//
+// The inifile syntax is <keyword>=<value>. Whitespace surrounding the "=" will be stripped away.
+class IniFile : IniBase {
+
+	// Constructor
+	this(string fn) {
+		int ndx;
+		auto f = File(fn);
+		foreach(line; f.byLine()) {
+			// strip out comments and leading and trailing whitespace
+			auto tmp = line.until('#').array.strip;
+			if (tmp.length == 0) continue;
+			auto res = tmp.findSplit("=");
+			if (res[1] != "=") throw new Exception(format("No = found in %s",line));
+			auto key = to!string(res[0].strip);
+			if (key in ini) {
+				ini[key] ~= ' ' ~ to!string(res[2].strip);
+			} else {
+				ini[key] = to!string(res[2].strip);
+			}
+			
+		}
+	}
 }
 
 unittest {
