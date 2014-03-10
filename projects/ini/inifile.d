@@ -23,7 +23,7 @@ abstract class IniBase {
 		return ini.keys;
 	} 
 
-	private string[string] ini;
+	string[string] ini;
 }
 
 
