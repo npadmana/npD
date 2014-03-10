@@ -1,0 +1,31 @@
+Two-point correlation function implementations
+==============================================
+
+Unfortunately, a simple one-size-fits-all 2-point correlation function code is 
+tricky. Different applications have slightly different needs, mostly around
+how best to sequence files in and out of the code, whether one needs RR and DR terms
+etc. 
+
+One approach is to have all applications use exactly the same code, but then write 
+shims that produce the input in the correct format. This gets very clumsy very 
+quickly.
+
+This directory keeps different implementations of the wrappers around the
+correlation function codes. These are mostly all built off the do_smu, do_ppp_smu and
+do_pll codes. This file will keep track of the various implementations; hopefully
+most cases will find a close enough match here. 
+
+
+Implementations
+===============
+
+
+do2pt_ppp_smu_sqlite 
+--------------------
+  -- Periodic, plane-parallel
+  -- Computes s-mu
+  -- SQLite 
+  	-- The input catalogs are assumed to be in an SQLite database file
+  	-- The various samples are specified as SQL queries
+  	-- The input configurations and the outputs are stored in another
+  	   sqlite database, which is passed in to the code. 
