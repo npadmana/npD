@@ -1,6 +1,8 @@
 module paircounters;
 
 import std.stdio, std.math, std.conv, std.parallelism, std.string;
+import std.typecons;
+
 import gsl.histogram, spatial;
 
 // Make an MPI-supported version
@@ -125,6 +127,25 @@ class Histogram2D {
 	// Reset the histogram
 	void reset() {
 		gsl_histogram2d_reset(hist);
+	}
+
+	// Return the x and y ranges as tuples
+	Tuple!(double, double) xrange(int i) {
+		double lo, hi;
+		gsl_histogram2d_get_xrange(hist, i, &lo, &hi);
+		return tuple(lo, hi);
+	}
+	Tuple!(double, double) yrange(int i) {
+		double lo, hi;
+		gsl_histogram2d_get_yrange(hist, i, &lo, &hi);
+		return tuple(lo, hi);
+	}
+
+	// Return a copy of the full array
+	double[] getHist() {
+		auto arr = new double[nx*ny];
+		arr[] = hist.bin[0..nx*ny];
+		return arr;
 	}
 
 
