@@ -162,6 +162,7 @@ void main(char[][] args) {
 							Clock.currTime(UTC()).toISOExtString(),
 							codeName, codeVersion));
 		outdb.execute(format(r"create table %s (
+				Date TEXT,
 				Name TEXT,
 				SumWeight1 REAL,
 				SumWeight2 REAL,
