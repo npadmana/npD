@@ -15,4 +15,4 @@ make.vars
 *.so
 *.dylib
 *.di
-
+*.swp
