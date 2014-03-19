@@ -1,13 +1,13 @@
-/* 
-Based of the do_ppp_smu implementation. 
+/*
+Based of the do_ppp_smu implementation.
 
-The data are assumed to be stored in a (single) SQLite database, and are accessed by SQL queries. 
+The data are assumed to be stored in a (single) SQLite database, and are accessed by SQL queries.
 
-The job configuration and outputs are stored in a separate SQLite database; look at the SQL queries 
+The job configuration and outputs are stored in a separate SQLite database; look at the SQL queries
 in the code below to figure out what it it doing.
 
-For each pair of samples 1 and 2, this code just computes the paircounts 1x2. It does not attempt to 
-try to guess when you want auto and cross samples. 
+For each pair of samples 1 and 2, this code just computes the paircounts 1x2. It does not attempt to
+try to guess when you want auto and cross samples.
 
 The input to the code is the sqlite file.
 
@@ -17,10 +17,10 @@ import std.parallelism, std.concurrency;
 import std.datetime;
 
 import d2sqlite3;
-import mpi.mpi, ini, spatial, paircounters;
+import mpi.mpi, ini, sqliteini, spatial, paircounters;
 
 const string codeName="do2pt_ppp_smu_sqlite.d";
-const string codeVersion="v0"
+const string codeVersion="v0";
 
 //struct Particle {
 //	double x,y,z,w,x2;
@@ -103,7 +103,7 @@ struct Job {
 	string query1;
 	string query2;
 }
- 
+
 void main(char[][] args) {
 	if (MPI_Init(args) != 0) throw new Exception("Unable to initialize MPI");
 	scope(exit) MPI_Finalize();
@@ -132,6 +132,9 @@ void main(char[][] args) {
 
 	// Get information on the jobs
 	auto datadb = ini.get!string("DataDB");
+	// InitSQL are SQL commands that will be run before any of the JobQuery queries are started
+	// This is useful eg. building temporary tables in memory, attaching other databases etc.
+	auto initsql = ini.get!string("InitSQL");
 	// Job query is assumed to have a name in the first column, and query1 and query2 as second columns
 	auto jobquery = ini.get!string("JobQuery");
 	auto pairtable = ini.get!string("PairTable");
@@ -147,19 +150,18 @@ void main(char[][] args) {
 		}
 
 		// Log information of what we're doing
-		db.execute(r"
+		outdb.execute(r"
 		create table if not exists Log (
-			Config TEXT, 
+			Config TEXT,
 			Date TEXT,
-			CodeName TEXT, 
+			CodeName TEXT,
 			CodeVersion TEXT
 		)");
-		db.execute(format("insert into Log (%s,%s,%s,%s)",
+		outdb.execute(format("insert into Log (%s,%s,%s,%s)",
 							configtable,
 							Clock.currTime(UTC()).toISOExtString(),
-							codeName, codeVersion);
-		db.execute(format("drop table if exists %s",pairtable));
-		db.execute(format(r"create table %s (
+							codeName, codeVersion));
+		outdb.execute(format(r"create table %s (
 				Name TEXT,
 				SumWeight1 REAL,
 				SumWeight2 REAL,
@@ -170,7 +172,7 @@ void main(char[][] args) {
 
 
 
-	//// Initial paircounters 
+	//// Initial paircounters
 	//auto PP = new SMuPairCounterPeriodicPlaneParallel!Particle(smax, ns, nmu, Lbox);
 
 	//Particle[] darr, rarr;
