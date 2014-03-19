@@ -157,7 +157,7 @@ void main(char[][] args) {
 			CodeName TEXT,
 			CodeVersion TEXT
 		)");
-		outdb.execute(format("insert into Log (%s,%s,%s,%s)",
+		outdb.execute(format("insert into Log VALUES ('%s','%s','%s','%s')",
 							configtable,
 							Clock.currTime(UTC()).toISOExtString(),
 							codeName, codeVersion));
