@@ -1,8 +1,8 @@
 // Build a separate SQLite ini file reader
-module sqliteini;
+module ini.sqliteini;
 
 import std.string;
-import ini, d2sqlite3;
+import ini.inifile, d2sqlite3;
 
 
 // Handler for SQLite IniFiles

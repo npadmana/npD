@@ -1,8 +1,6 @@
 include ${NPD_DIR}/make.vars
 
-INIDIR=${NPD_DIR}/projects/ini
-INIFILES=${INIDIR}/inifile.d ${INIDIR}/sqliteini.d
-DFILES=../paircounters.d ../spatial.d ${INIFILES}
+DFILES=../paircounters.d ../spatial.d 
 GSLLINK=-L${NPD_LIB} -lgsld -L${GSL_DIR}/lib -lgsl -lgslcblas
 SQLITE3LINK=-L${NPD_LIB} -ld2sqlite3 -L${SQLITE3_DIR}/lib -lsqlite3
 
@@ -14,9 +12,9 @@ all : ${EXECS}
 .SUFFIXES:
 
 ${BUILDDIR}/%.x: %.d
-	${DC} -O ${DCFLAGS} $< ${DFILES} -of${BUILDDIR}/$*.o -version=MPI -version=${MPIVERSION}
+	${DC} -O ${DCFLAGS} $< ${DFILES} -of${BUILDDIR}/$*.o -version=MPI -version=${MPIVERSION} -version=SQLITE3
 	${MPICC} ${LFLAGS} -o $@ ${BUILDDIR}/$*.o \
-			${GSLLINK} ${SQLITE3LINK} -lmpid  ${PHOBOSLIB}
+			${GSLLINK} ${SQLITE3LINK} -lmpid -linid_sql ${PHOBOSLIB}
 
 
 

@@ -17,7 +17,7 @@ import std.parallelism, std.concurrency;
 import std.datetime;
 
 import d2sqlite3;
-import mpi.mpi, ini, sqliteini, spatial, paircounters;
+import mpi.mpi, ini, spatial, paircounters;
 
 const string codeName="do2pt_ppp_smu_sqlite.d";
 const string codeVersion="v0";

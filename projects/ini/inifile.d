@@ -1,4 +1,4 @@
-module ini;
+module ini.inifile;
 
 import std.algorithm, std.conv, std.stdio, std.string, std.array, std.traits,std.math;
 
