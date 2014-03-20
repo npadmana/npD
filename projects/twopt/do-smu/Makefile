@@ -1,9 +1,14 @@
 include ../../../make.vars
 
-DFILES=../paircounters.d ../spatial.d 
+# This is unfortunately necessary until LDC gets up to 2.064
+# At which point, just replace by -linid
+INIFILES=${NPD_DIR}/projects/ini/inifile.d
+
+DFILES=../paircounters.d ../spatial.d ${INIFILES}
 SRCS=do_smu.d
 EXECS=${SRCS:%.d=${BUILDDIR}/%.x}
 GSLLINK=-L${GSL_DIR}/lib -lgsl -lgslcblas 
+
 
 all : ${EXECS}
 
@@ -12,7 +17,7 @@ all : ${EXECS}
 ${BUILDDIR}/%.x: %.d
 	${DC} ${INIMODULE} -O ${DCFLAGS} $< ${DFILES} ${INICODE} -of${BUILDDIR}/$*.o -version=MPI -version=${MPIVERSION}
 	${MPICC} ${LFLAGS} -o $@ ${BUILDDIR}/$*.o \
-			${GSLLINK} -L${NPD_LIB} -lgsld -lmpid -linid  ${PHOBOSLIB}
+			${GSLLINK} -L${NPD_LIB} -lgsld -lmpid  ${PHOBOSLIB}
 
 
 
