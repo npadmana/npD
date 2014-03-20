@@ -17,7 +17,8 @@ import std.parallelism, std.concurrency;
 import std.datetime;
 
 import d2sqlite3;
-import mpi.mpi, ini, spatial, paircounters;
+import mpi.mpi, spatial, paircounters;
+import ini.sqliteini; // LDC does not support package.d as yet
 
 const string codeName="do2pt_ppp_smu_sqlite.d";
 const string codeVersion="v0";
