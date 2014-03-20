@@ -22,79 +22,91 @@ import mpi.mpi, ini, sqliteini, spatial, paircounters;
 const string codeName="do2pt_ppp_smu_sqlite.d";
 const string codeVersion="v0";
 
-//struct Particle {
-//	double x,y,z,w,x2;
-//	this(double[] arr) {
-//		x = arr[0]; y = arr[1]; z=arr[2]; w=arr[3];
-//		x2 = x*x + y*y + z*z;
-//	}
-//}
+struct Particle {
+	double x,y,z,w,x2;
+	this(double x1, double y1, double z1, double w1) {
+		x = x1; y = y1; z=z1; w = w1;
+		x2 = x*x + y*y + z*z;
+	}
+}
 
-//double sumOfWeights(Particle[] arr) {
-//	return reduce!((a,b) => a + b.w)(0.0, arr);
-//}
-
-//Particle[] readFile(string fn) {
-//	auto fin = File(fn);
-//	Particle[] parr;
-//	foreach (line; fin.byLine()) {
-//		auto p = Particle(to!(double[])(strip(line).split));
-//		parr ~= p;
-//	}
-//	return parr;
-//}
+double sumOfWeights(Particle[] arr) {
+	return reduce!((a,b) => a + b.w)(0.0, arr);
+}
 
 
+synchronized class SyncArray {
+	private Particle[] buf;
 
-//synchronized class SyncArray {
-//	private Particle[] buf;
+	void push(Particle[] arr1) {
+		buf.length = arr1.length;
+		foreach(i, x; arr1) {
+			buf[i] = x;
+		}
+		//buf[] = arr1[];
+	}
 
-//	void push(Particle[] arr1) {
-//		buf.length = arr1.length;
-//		foreach(i, x; arr1) {
-//			buf[i] = x;
-//		}
-//		//buf[] = arr1[];
-//	}
-
-//	Particle[] pop() {
-//		auto _tmp = new Particle[buf.length];
-//		foreach(i,x; buf) {
-//			_tmp[i] = x;
-//		}
-//		//_tmp[] = buf[];
-//		buf = null;
-//		return _tmp;
-//	}
-//}
+	Particle[] pop() {
+		auto _tmp = new Particle[buf.length];
+		foreach(i,x; buf) {
+			_tmp[i] = x;
+		}
+		//_tmp[] = buf[];
+		buf = null;
+		return _tmp;
+	}
+}
 
 
-//void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf) {
-//	writeln("Reader started");
+void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf) {
+	writeln("Reader started");
 
-//	auto nfiles = receiveOnly!(int)();
-//	auto dfns = new string[nfiles];
-//	auto rfns = new string[nfiles];
-//	foreach (ref fn1, ref fn2; lockstep(dfns, rfns)) {
-//		fn1 = receiveOnly!(string)();
-//		fn2 = receiveOnly!(string)();	
-//	}
+	// Get information from the calling process
+	auto datadbfn = receiveOnly!(string)();
+	auto initsql = receiveOnly!(string)();
+	auto nfiles = receiveOnly!(int)();
+	// We're calling these fns here, but these are really SQL queries
+	auto dfns = new string[nfiles];
+	auto rfns = new string[nfiles];
+	foreach (ref fn1, ref fn2; lockstep(dfns, rfns)) {
+		fn1 = receiveOnly!(string)();
+		fn2 = receiveOnly!(string)();	
+	}
 
-//	string rfn_save="";
-//	bool flag;
-//	Particle[] darr, rarr;
-//	foreach (dfn, rfn; lockstep(dfns, rfns)) {
-//		darr = readFile(dfn);
-//		dbuf.push(darr);
-//		if (rfn != "-") {
-//			if (rfn != rfn_save) rarr = readFile(rfn);
-//			rfn_save = rfn;
-//			rbuf.push(rarr);
-//		}
-//		send(ownerTid, true);
-//		flag = receiveOnly!bool();
-//	}
-//}
+	// Open the SQL connection and run the initial SQL code
+	auto datadb = Database(datadbfn);
+	datadb.execute(initsql);
+
+	// Define the reader
+	Particle[] readQuery(string qstr) {
+		auto qry = datadb.query(qstr);
+		Particle[] parr;
+		foreach (row; qry.rows) {
+			parr ~= Particle(row[0].get!double(),
+							 row[1].get!double(),
+							 row[2].get!double(),
+							 row[3].get!double());
+		}
+		return parr;
+	}
+
+
+
+	string rfn_save="";
+	string dfn_save="";
+	bool flag;
+	Particle[] darr, rarr;
+	foreach (dfn, rfn; lockstep(dfns, rfns)) {
+		if (dfn != dfn_save) darr = readQuery(dfn);
+		dfn_save = dfn;
+		dbuf.push(darr);
+		if (rfn != rfn_save) rarr = readQuery(rfn);
+		rfn_save = rfn;
+		rbuf.push(rarr);
+		send(ownerTid, true);
+		flag = receiveOnly!bool();
+	}
+}
 
 MinmaxDistPeriodic distFunc;
 
@@ -164,140 +176,157 @@ void main(char[][] args) {
 		outdb.execute(format(r"create table %s (
 				Date TEXT,
 				Name TEXT,
+				Query1 TEXT, 
+				Query2 TEXT,
 				SumWeight1 REAL,
 				SumWeight2 REAL,
 				Pairs BLOB
 			)"
 			,pairtable));
 	}
+	// Broadcast the job list --- not necessary, but simplifies logic later
+	Bcast(joblist, 0, MPI_COMM_WORLD);
 
 
+	// Initial paircounters
+	auto PP = new SMuPairCounterPeriodicPlaneParallel!Particle(smax, ns, nmu, Lbox);
 
-	//// Initial paircounters
-	//auto PP = new SMuPairCounterPeriodicPlaneParallel!Particle(smax, ns, nmu, Lbox);
+	Particle[] darr, rarr;
+	Particle[][] dsplit, rsplit;
+	KDNode!Particle[] droot = new KDNode!Particle[size];
+	KDNode!Particle[] rroot = new KDNode!Particle[size];
 
-	//Particle[] darr, rarr;
-	//Particle[][] dsplit, rsplit;
-	//KDNode!Particle[] droot = new KDNode!Particle[size];
-	//KDNode!Particle[] rroot = new KDNode!Particle[size];
+	// Message passing for asyncio
+	auto dbuf = new shared SyncArray;
+	auto rbuf = new shared SyncArray;
+	bool flag;
+	Tid readerTid;
+	if (rank == 0) {
+		readerTid = spawn(&readerProcess, dbuf, rbuf);
+		send(readerTid, datadb);
+		send(readerTid,initsql);
+		send(readerTid, to!int(joblist.length));
+		foreach (job1; joblist) {
+			send(readerTid, job1.query1);
+			send(readerTid, job1.query2);
+		}
+	}
 
-	//// Message passing for asyncio
-	//auto dbuf = new shared SyncArray;
-	//auto rbuf = new shared SyncArray;
-	//bool flag;
-	//Tid readerTid;
-	//if (rank == 0) {
-	//	readerTid = spawn(&readerProcess, dbuf, rbuf);
-	//	send(readerTid, to!int(jobs.length));
-	//	foreach (job1; jobs) {
-	//		auto params = ini.get!(string[])(job1);
-	//		send(readerTid, params[0]);
-	//		send(readerTid, params[1]);
-	//	}
-	//}
+	// Write bins to tables
+	if (rank == 0) {
+		// sbins
+		outdb.execute(format(r"create table %s_sbins (
+			ibin INTEGER, 
+			smin REAL,
+			smax REAL)",pairtable));
+		outdb.execute("begin transaction");
+		string sql=format(r"insert into %s_sbins VALUES (?,?,?)",pairtable);
+		auto query=outdb.query(sql);
+		foreach (ibin; 0..ns) {
+			auto tup = PP.xrange(ibin);
+			query.params.bind(1,ibin)
+						.bind(2,tup[0])
+						.bind(3,tup[1]);
+			query.execute();
+			query.reset();
+		}
+		outdb.execute("end transaction");
 
-	//// Loop over jobs
-	//bool noRR, noDR; // noDR implies noRR and is set by setting the R filename to -
-	//StopWatch sw;
-	//foreach (job1; jobs) {
-	//	MPI_Barrier(MPI_COMM_WORLD);
-	//	noDR=false; // reset
-	//	sw.reset(); sw.start();
-	//	auto params = ini.get!(string[])(job1);
-	//	if (params.length < 3) throw new Exception("job specs need at least three parameters");
-	//	if ((params.length > 3) && (params[3]=="noRR")) noRR=true; else noRR=false;
-	//	if (params[1]=="-") {
-	//		noRR = true;
-	//		noDR = true;
-	//	}
+		//mu bins
+		outdb.execute(format(r"create table %s_mubins (
+			ibin INTEGER, 
+			mumin REAL,
+			mumax REAL)",pairtable));
+		outdb.execute("begin transaction");
+		sql=format(r"insert into %s_mubins VALUES (?,?,?)",pairtable);
+		query=outdb.query(sql);
+		foreach (ibin; 0..nmu) {
+			auto tup = PP.yrange(ibin);
+			query.params.bind(1,ibin)
+						.bind(2,tup[0])
+						.bind(3,tup[1]);
+			query.execute();
+			query.reset();
+		}
+		outdb.execute("end transaction");
+	}
 
-	//	if (rank==0) {
-	//		writef("%s : Processing D=%s and R=%s to %s-{norm,DD,DR",job1, params[0],params[1],params[2]);
-	//		if (!noRR) write(",RR");
-	//		writeln("}.dat .....");
+	// Loop over jobs
+	StopWatch sw;
+	foreach (job1; joblist) {
+		MPI_Barrier(MPI_COMM_WORLD);
+		sw.reset(); sw.start();
 
-	//		flag = receiveOnly!bool();
-	//		darr = dbuf.pop;
-	//		if (!noDR) rarr = rbuf.pop;
-	//		send(readerTid, true);
+		if (rank==0) {
+			writefln("Processing %s .......",job1.name);
 
-	//		writefln("%s : Data read in.....", job1);
+			flag = receiveOnly!bool();
+			darr = dbuf.pop;
+			rarr = rbuf.pop;
+			send(readerTid, true);
 
-	//		randomShuffle(darr);
-	//		if (!noDR) randomShuffle(rarr);
-	//		writefln("%s : Data shuffled....", job1);
+			writefln("%s : Data read in.....", job1.name);
 
-	//		// Write the norm file here!
-	//		auto fnorm = File(params[2]~"-norm.dat","w");
-	//		fnorm.writefln("%s: %20.15e",params[0],sumOfWeights(darr));
-	//		if (!noDR) fnorm.writefln("%s: %20.15e",params[1],sumOfWeights(rarr));
-	//	}
+			randomShuffle(darr);
+			randomShuffle(rarr);
+			writefln("%s : Data shuffled....", job1.name);
+		}
 
-	//	// Build trees
-		
-	//	// Broadcast
-	//	Bcast(darr, 0, MPI_COMM_WORLD);
-	//	if (!noDR) Bcast(rarr, 0, MPI_COMM_WORLD);
+		// Build trees
+	  
+		// Broadcast
+		Bcast(darr, 0, MPI_COMM_WORLD);
+		Bcast(rarr, 0, MPI_COMM_WORLD);
 
-	//	// Split
-	//	dsplit = Split(darr, MPI_COMM_WORLD);
-	//	if (!noDR) rsplit = Split(rarr, MPI_COMM_WORLD);
+		// Split
+		dsplit = Split(darr, MPI_COMM_WORLD);
+		rsplit = Split(rarr, MPI_COMM_WORLD);
 
-	//	if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1, sw.peek.seconds);
+		if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1.name, sw.peek.seconds);
 
-	//	// Build trees
-	//	foreach (i, a1; parallel(dsplit,1)) {
-	//		droot[i] = new KDNode!Particle(a1, 0, minPart);
-	//	}
-	//	if (!noDR) {
-	//		foreach (i, a1; parallel(rsplit, 1)) {
-	//			rroot[i] = new KDNode!Particle(a1, 0, minPart);
-	//		}
-	//	}
-	//	if (rank==0) writefln("%s : Elapsed time after building trees (in sec): %s",job1, sw.peek.seconds);
+		// Build trees
+		foreach (i, a1; parallel(dsplit,1)) {
+			droot[i] = new KDNode!Particle(a1, 0, minPart);
+		}
+		foreach (i, a1; parallel(rsplit, 1)) {
+			rroot[i] = new KDNode!Particle(a1, 0, minPart);
+		}
+		if (rank==0) writefln("%s : Elapsed time after building trees (in sec): %s",job1.name, sw.peek.seconds);
 
-	//	void computeCorr(KDNode!Particle[] a1, KDNode!Particle[] a2) {
-	//		auto isauto = a1 is a2; 
+		void computeCorr(KDNode!Particle[] a1, KDNode!Particle[] a2) {
+			auto isauto = a1 is a2; 
 
-	//		int nel=-1;
-	//		double scale;
+			int nel=-1;
+			double scale;
 
-	//		PP.reset();
-	//		foreach (i, root1; a1) {
-	//			foreach (j, root2; a2) {
-	//				if (isauto && (j > i)) continue;
-	//				nel++; // Increment at the start
-	//				if ((nel % size) != rank) continue;
-	//				scale = ((!isauto) || (j==i)) ? 1 : 2;
-	//				PP.accumulateParallel!distFunc(root1, root2, nworkers,scale);
-	//			}
-	//		}
-	//		PP.mpiReduce(0, MPI_COMM_WORLD);
-	//	}
+			PP.reset();
+			foreach (i, root1; a1) {
+				foreach (j, root2; a2) {
+					if (isauto && (j > i)) continue;
+					nel++; // Increment at the start
+					if ((nel % size) != rank) continue;
+					scale = ((!isauto) || (j==i)) ? 1 : 2;
+					PP.accumulateParallel!distFunc(root1, root2, nworkers,scale);
+				}
+			}
+			PP.mpiReduce(0, MPI_COMM_WORLD);
+		}
 
-	//	// DD
-	//	computeCorr(droot, droot);
-	//	if (rank==0) {
-	//		PP.write(File(params[2]~"-DD.dat","w"));
-	//		writefln("%s : Elapsed time after DD (in sec): %s", job1, sw.peek.seconds);
-	//	}
-
-	//	// DR 
-	//	if (noDR) continue;
-	//	computeCorr(droot, rroot);
-	//	if (rank==0) {
-	//		PP.write(File(params[2]~"-DR.dat","w"));
-	//		writefln("%s : Elapsed time after DR (in sec): %s", job1, sw.peek.seconds);
-	//	}
-
-	//	// RR
-	//	if (noRR) continue;
-	//	computeCorr(rroot, rroot);
-	//	if (rank==0) {
-	//		PP.write(File(params[2]~"-RR.dat","w"));
-	//		writefln("%s : Elapsed time after RR (in sec): %s", job1, sw.peek.seconds);
-	//	}
-
-	//}
+		// DR
+		computeCorr(droot, rroot);
+		if (rank==0) {
+			auto sql = format("insert into %s VALUES (?,?,?,?,?,?,?)",pairtable);
+			auto query = outdb.query(sql);
+			query.params.bind(1,Clock.currTime(UTC()).toISOExtString())
+						.bind(2,job1.name)
+						.bind(3,job1.query1)
+						.bind(4,job1.query2)
+						.bind(5,sumOfWeights(darr))
+						.bind(6,sumOfWeights(rarr))
+						.bind(7,PP.getHist());
+			query.execute();
+			writefln("%s : Elapsed time after DD (in sec): %s", job1.name, sw.peek.seconds);
+		}
+	}
 
 }
