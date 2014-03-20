@@ -14,10 +14,10 @@ insert into config VALUES
 	("InitSQL","
 		attach 'test.db' as 'test';
 		-- build a temporary memory table
-		create table tmp as 
-			select x,y,z,mvir,vmax,EPScrit2 
-			from halos join ejected on halos.id==ejected.id
-			where HostHaloId==-1;
+		-- create table tmp as 
+		--	select x,y,z,mvir,vmax,EPScrit2 
+		--	from halos join ejected on halos.id==ejected.id
+		--	where HostHaloId==-1;
 			"),
 	("JobQuery","select jobs.name as name, 
 					s1.query as query1, 
