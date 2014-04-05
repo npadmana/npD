@@ -119,8 +119,9 @@ struct Job {
 
 void main(char[][] args) {
 	if (MPI_Init(args) != 0) throw new Exception("Unable to initialize MPI");
-	scope(exit) MPI_Finalize();
-	
+	scope(success) MPI_Finalize();
+	scope(failure) MPI_Abort(MPI_COMM_WORLD,1); 
+
 	//  Get rank
 	int rank,size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
