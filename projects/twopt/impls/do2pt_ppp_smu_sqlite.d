@@ -21,7 +21,7 @@ import mpi.mpi, spatial, paircounters;
 import ini.sqliteini; // LDC does not support package.d as yet
 
 const string codeName="do2pt_ppp_smu_sqlite.d";
-const string codeVersion="v0";
+const string codeVersion="v0.1";
 
 struct Particle {
 	double x,y,z,w,x2;
