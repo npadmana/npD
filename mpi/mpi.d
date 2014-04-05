@@ -22,7 +22,7 @@ extern (C) {
 	int MPI_Init(int *argc, char ***argv);
 	int MPI_Reduce(void *sendbuf, void *recvbuf, int count,
                MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);
-
+	int MPI_Abort(MPI_Comm comm, int errorcode);
 
 	// Convenience functions
 	int testMpiSizes();
