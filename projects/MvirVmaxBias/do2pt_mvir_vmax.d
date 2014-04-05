@@ -20,7 +20,7 @@ import d2sqlite3;
 import mpi.mpi, spatial, paircounters;
 import ini.sqliteini; // LDC does not support package.d as yet
 
-const string codeName="do2pt_ppp_smu_sqlite.d";
+const string codeName="do2pt_mvir_vmax";
 const string codeVersion="v0.1";
 
 struct Particle {
@@ -115,6 +115,7 @@ struct Job {
 	string name;
 	string query1;
 	string query2;
+	int nboot; // Number of bootstraps of the _SECOND_ file
 }
 
 void main(char[][] args) {
@@ -140,6 +141,8 @@ void main(char[][] args) {
 	auto minPart = ini.get!uint("minPart");
 	auto Lbox = ini.get!double("Lbox");
 	distFunc.L = Lbox;
+	auto seed = ini.get!int("seed");
+	auto rng = Random(seed);
 
 	// Parallel or not
 	auto nworkers = ini.get!int("nworkers");
@@ -149,10 +152,15 @@ void main(char[][] args) {
 	// InitSQL are SQL commands that will be run before any of the JobQuery queries are started
 	// This is useful eg. building temporary tables in memory, attaching other databases etc.
 	auto initsql = ini.get!string("InitSQL");
-	// Job query is assumed to have a name in the first column, and query1 and query2 as second columns
+	// Job query is assumed to have a name in the first column, and query1 and query2 as second and third columns
+	// The last column is the number of boostraps of the SECOND dataset
+	// If 0, use the original dataset with no changes
+	// If >0, the 0th case is the original case, while the others are bootstrapped versions
+	// ONLY THE SECOND DATA SET IS BOOTSTRAPPED!!
+	// This is really for the case where one wants to do cross-correlations of mass with a sparse data set
 	auto jobquery = ini.get!string("JobQuery");
 	auto pairtable = ini.get!string("PairTable");
-	
+
 	// Get the list of jobs -- only rank 0 needs do this
 	Job[] joblist;
 	Database outdb;
@@ -160,7 +168,7 @@ void main(char[][] args) {
 		outdb = Database(outdbfn);
 		auto q1 = outdb.query(jobquery);
 		foreach (row; q1.rows) {
-			joblist ~= Job(row[0].get!string(), row[1].get!string(),row[2].get!string());
+			joblist ~= Job(row[0].get!string(), row[1].get!string(),row[2].get!string(), row[3].get!int());
 		}
 
 		// Log information of what we're doing
@@ -178,6 +186,7 @@ void main(char[][] args) {
 		outdb.execute(format(r"create table %s (
 				Date TEXT,
 				Name TEXT,
+				BootstrapID INTEGER,
 				Query1 TEXT, 
 				Query2 TEXT,
 				SumWeight1 REAL,
@@ -193,7 +202,7 @@ void main(char[][] args) {
 	// Initial paircounters
 	auto PP = new SMuPairCounterPeriodicPlaneParallel!Particle(smax, ns, nmu, Lbox);
 
-	Particle[] darr, rarr;
+	Particle[] darr, rarr, bootarr;
 	Particle[][] dsplit, rsplit;
 	KDNode!Particle[] droot = new KDNode!Particle[size];
 	KDNode!Particle[] rroot = new KDNode!Particle[size];
@@ -264,70 +273,86 @@ void main(char[][] args) {
 
 			flag = receiveOnly!bool();
 			darr = dbuf.pop;
-			rarr = rbuf.pop;
+			bootarr = rbuf.pop; // Save the array for bootstrapping
 			send(readerTid, true);
 
 			writefln("%s : Data read in.....", job1.name);
-
-			randomShuffle(darr);
-			randomShuffle(rarr);
+			
+			// Just in case the data are organized in a funny manner
+			// NOTE : Due to the fact that rng is a value type, these shuffles
+			// are correlated. It doesn't matter for this case.
+			randomShuffle(darr, rng);
+			randomShuffle(bootarr, rng); 
 			writefln("%s : Data shuffled....", job1.name);
 		}
 
-		// Build trees
-	  
-		// Broadcast
+		// Broadcast the first data set, split it and build trees for it
 		Bcast(darr, 0, MPI_COMM_WORLD);
-		Bcast(rarr, 0, MPI_COMM_WORLD);
-
-		// Split
 		dsplit = Split(darr, MPI_COMM_WORLD);
-		rsplit = Split(rarr, MPI_COMM_WORLD);
-
-		if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1.name, sw.peek.seconds);
-
-		// Build trees
 		foreach (i, a1; parallel(dsplit,1)) {
 			droot[i] = new KDNode!Particle(a1, 0, minPart);
 		}
-		foreach (i, a1; parallel(rsplit, 1)) {
-			rroot[i] = new KDNode!Particle(a1, 0, minPart);
-		}
-		if (rank==0) writefln("%s : Elapsed time after building trees (in sec): %s",job1.name, sw.peek.seconds);
 
-		void computeCorr(KDNode!Particle[] a1, KDNode!Particle[] a2) {
-			auto isauto = a1 is a2; 
+	
 
-			int nel=-1;
-			double scale;
 
-			PP.reset();
-			foreach (i, root1; a1) {
-				foreach (j, root2; a2) {
-					if (isauto && (j > i)) continue;
-					nel++; // Increment at the start
-					if ((nel % size) != rank) continue;
-					scale = ((!isauto) || (j==i)) ? 1 : 2;
-					PP.accumulateParallel!distFunc(root1, root2, nworkers,scale);
+		// Now start the bootstrapping loop
+		foreach (iboot; 0..(job1.nboot+1)) {
+
+			// Do the bootstrap
+			if (rank==0) {
+				if (iboot == 0) {
+					rarr = bootarr.dup;
+				} else {
+					// Bootstrap
+					rarr = map!(x=>bootarr[uniform(0,bootarr.length,rng)])(bootarr).array;
 				}
 			}
-			PP.mpiReduce(0, MPI_COMM_WORLD);
-		}
+			Bcast(rarr, 0, MPI_COMM_WORLD);
+			// Split
+			rsplit = Split(rarr, MPI_COMM_WORLD);
+			if (rank==0) writefln("%s : Elapsed time after collecting data (in sec): %s",job1.name, sw.peek.seconds);
+			// Build trees
+			foreach (i, a1; parallel(rsplit, 1)) {
+				rroot[i] = new KDNode!Particle(a1, 0, minPart);
+			}
+			if (rank==0) writefln("%s : Elapsed time after building trees (in sec): %s",job1.name, sw.peek.seconds);
 
-		// DR
-		computeCorr(droot, rroot);
-		if (rank==0) {
-			auto sql = format("insert into %s VALUES (?,?,?,?,?,?,?)",pairtable);
-			auto query = outdb.query(sql);
-			query.params.bind(1,Clock.currTime(UTC()).toISOExtString())
-						.bind(2,job1.name)
-						.bind(3,job1.query1)
-						.bind(4,job1.query2)
-						.bind(5,sumOfWeights(darr))
-						.bind(6,sumOfWeights(rarr))
-						.bind(7,PP.getHist());
-			query.execute();
-			writefln("%s : Elapsed time after DD (in sec): %s", job1.name, sw.peek.seconds);
+			void computeCorr(KDNode!Particle[] a1, KDNode!Particle[] a2) {
+				auto isauto = a1 is a2; 
+
+				int nel=-1;
+				double scale;
+
+				PP.reset();
+				foreach (i, root1; a1) {
+					foreach (j, root2; a2) {
+						if (isauto && (j > i)) continue;
+						nel++; // Increment at the start
+						if ((nel % size) != rank) continue;
+						scale = ((!isauto) || (j==i)) ? 1 : 2;
+						PP.accumulateParallel!distFunc(root1, root2, nworkers,scale);
+					}
+				}
+				PP.mpiReduce(0, MPI_COMM_WORLD);
+			}
+
+			// DR
+			computeCorr(droot, rroot);
+			if (rank==0) {
+				auto sql = format("insert into %s VALUES (?,?,?,?,?,?,?,?)",pairtable);
+				auto query = outdb.query(sql);
+				query.params.bind(1,Clock.currTime(UTC()).toISOExtString())
+							.bind(2,job1.name)
+							.bind(3,iboot)
+							.bind(4,job1.query1)
+							.bind(5,job1.query2)
+							.bind(6,sumOfWeights(darr))
+							.bind(7,sumOfWeights(rarr))
+							.bind(8,PP.getHist());
+				query.execute();
+				writefln("%s : Elapsed time after DD (in sec): %s", job1.name, sw.peek.seconds);
+			}
 		}
 	}
 
