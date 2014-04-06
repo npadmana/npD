@@ -17,9 +17,9 @@ create table config (
   Value TEXT
 );
 insert into config VALUES
-        ("ns","7000"),
+        ("ns","4000"),
         ("nmu", "1"),
-        ("smax","70"),
+        ("smax","40"),
         ("minPart","500"),
 		("seed","6311"),
         ("Lbox","250"),
@@ -47,6 +47,7 @@ create table samples (
 insert into samples VALUES ("mass","select x,y,z,1 from particles");
 `;
 
+// Number of bootstraps is hardcoded to be 100
 immutable string sql2=`
 create table jobs (
 	name TEXT,
@@ -55,7 +56,7 @@ create table jobs (
 	nboot INTEGER
 );
 insert into jobs select printf('%s-%s',s.name, s.name),s.query,s.query,0 from samples s where s.name=='mass';
-insert into jobs select printf('%s-%s',s.name, m.name),s.query,m.query,3 from samples s join samples as m where s.name=='mass' and m.name!='mass';
+insert into jobs select printf('%s-%s',s.name, m.name),s.query,m.query,100 from samples s join samples as m where s.name=='mass' and m.name!='mass';
 `;
 
 
@@ -100,8 +101,7 @@ void main() {
 
 
 	// Define simple mass bins
-	//double[] vmaxes = [1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.6];
-	double[] vmaxes = [2.3,2.4];
+	double[] vmaxes = [1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.6];
 	double[] qq;
     db.execute("begin transaction");
 	auto qry = db.query("insert into samples VALUES (?,?)");
@@ -120,7 +120,6 @@ void main() {
       qry.execute();
       qry.reset();
 
-	  /*--------- COMMMENT OUT FOR TEST
 
 	  // Now get this sample out of the database
 	  // Cache the no-ejected case for use in the ejected case
@@ -140,7 +139,6 @@ void main() {
 		qry.execute();
 		qry.reset();
 	  }
-	  ------ COMMENT OUT QUANTILES FOR INITIAL TEST*/ 
 	 }
     }
     db.execute("commit transaction");
