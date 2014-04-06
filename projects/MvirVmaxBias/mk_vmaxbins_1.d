@@ -21,6 +21,7 @@ insert into config VALUES
         ("nmu", "1"),
         ("smax","70"),
         ("minPart","500"),
+		("seed","6311"),
         ("Lbox","250"),
         ("nworkers","7"),
         ("DataDB",":memory:"),
@@ -53,7 +54,7 @@ create table jobs (
 	query2 TEXT,
 	nboot INTEGER
 );
-insert into jobs select printf('%s-%s',s.name, s.name),s.query,s.query,1 from samples s where s.name=='mass';
+insert into jobs select printf('%s-%s',s.name, s.name),s.query,s.query,0 from samples s where s.name=='mass';
 insert into jobs select printf('%s-%s',s.name, m.name),s.query,m.query,3 from samples s join samples as m where s.name=='mass' and m.name!='mass';
 `;
 
