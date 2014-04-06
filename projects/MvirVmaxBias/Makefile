@@ -12,6 +12,11 @@ EXECS=${SRCS:%.d=${BUILDDIR}/%.x}
 
 all : ${EXECS}
 
+# Force DMD builds below
+vmaxbins : mk_vmaxbins_1.d
+	dmd -of${BUILDDIR}/mk_vmaxbins_1.x  $^ -I${NPD_DIR}/include -L-L${NPD_DIR}/lib/dmd -L-L${SQLITE3_DIR}/lib -L-ld2sqlite3 -L-lsqlite3 -L-linid_sql -version=SQLITE3 
+
+
 .SUFFIXES:
 
 ${BUILDDIR}/%.x: %.d
