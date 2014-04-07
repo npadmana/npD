@@ -11,6 +11,13 @@ try to guess when you want auto and cross samples.
 
 The input to the code is the sqlite file.
 
+Job query is assumed to have a name in the first column, and query1 and query2 as second and third columns
+The last column is the number of boostraps of the SECOND dataset
+If 0, use the original dataset with no changes
+If >0, the 0th case is the original case, while the others are bootstrapped versions
+ONLY THE SECOND DATA SET IS BOOTSTRAPPED!!
+This is really for the case where one wants to do cross-correlations of mass with a sparse data set
+
 */
 import std.stdio, std.algorithm, std.array, std.conv, std.datetime, std.string, std.random, std.range;
 import std.parallelism, std.concurrency;
@@ -129,9 +136,11 @@ void main(char[][] args) {
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
 	// Parse the input file
-	if (args.length < 3) throw new Exception("do-smu.x <dbfn> <configtable>");
+	if (args.length < 5) throw new Exception("do-smu.x <dbfn> <configtable> <jobtable> <pairtable>");
 	auto outdbfn = to!string(args[1]);
 	auto configtable = to!string(args[2]);
+	auto jobtable = to!string(args[3]);
+	auto pairtable = to!string(args[4]);
 	auto ini = new SQLiteIni(outdbfn,configtable);
 
 	// Set parameters -- no default values to prevent confusion
@@ -152,19 +161,13 @@ void main(char[][] args) {
 	// InitSQL are SQL commands that will be run before any of the JobQuery queries are started
 	// This is useful eg. building temporary tables in memory, attaching other databases etc.
 	auto initsql = ini.get!string("InitSQL");
-	// Job query is assumed to have a name in the first column, and query1 and query2 as second and third columns
-	// The last column is the number of boostraps of the SECOND dataset
-	// If 0, use the original dataset with no changes
-	// If >0, the 0th case is the original case, while the others are bootstrapped versions
-	// ONLY THE SECOND DATA SET IS BOOTSTRAPPED!!
-	// This is really for the case where one wants to do cross-correlations of mass with a sparse data set
-	auto jobquery = ini.get!string("JobQuery");
-	auto pairtable = ini.get!string("PairTable");
 
 	// Get the list of jobs -- only rank 0 needs do this
 	Job[] joblist;
 	Database outdb;
 	if (rank == 0) {
+		auto jobquery = "select * from " ~ jobtable ~";";
+		writeln("Executing jobquery : ",jobquery);
 		outdb = Database(outdbfn);
 		auto q1 = outdb.query(jobquery);
 		foreach (row; q1.rows) {
@@ -175,12 +178,14 @@ void main(char[][] args) {
 		outdb.execute(r"
 		create table if not exists Log (
 			Config TEXT,
+			Job TEXT, 
+			Pairs TEXT,
 			Date TEXT,
 			CodeName TEXT,
 			CodeVersion TEXT
 		)");
-		outdb.execute(format("insert into Log VALUES ('%s','%s','%s','%s')",
-							configtable,
+		outdb.execute(format("insert into Log VALUES ('%s','%s','%s','%s','%s','%s')",
+							configtable, jobtable, pairtable,
 							Clock.currTime(UTC()).toISOExtString(),
 							codeName, codeVersion));
 		outdb.execute(format(r"create table %s (
