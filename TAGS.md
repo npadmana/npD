@@ -5,7 +5,9 @@ might break existing code) should be documented here.
 
 
 
-
+v0.3.0
+------
+* Merge in qpm branch
 
 v0.2.1 :
 --------

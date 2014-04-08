@@ -2,7 +2,7 @@ import std.algorithm, std.stdio, std.array, std.conv, std.math, std.string;
 import std.typecons;
 import std.parallelism;
 
-import physics.cosmo, gsl.interpolation, ini;
+import physics.cosmo, gsl.interpolation, ini.inifile;
 
 immutable DEG2RAD = PI/180.0;
 immutable double c_H100 = 299792.458/100;
