@@ -128,7 +128,10 @@ struct Job {
 void main(char[][] args) {
 	if (MPI_Init(args) != 0) throw new Exception("Unable to initialize MPI");
 	scope(success) MPI_Finalize();
-	scope(failure) MPI_Abort(MPI_COMM_WORLD,1); 
+
+	// An MPI_Abort doesn't allow the exception to be printed, with a full stacktrace.
+	// We wrap the entire code in a try-catch blow, print the exception and then throw again
+	try {
 
 	//  Get rank
 	int rank,size;
@@ -359,6 +362,11 @@ void main(char[][] args) {
 				writefln("%s : Elapsed time after DD (in sec): %s", job1.name, sw.peek.seconds);
 			}
 		}
+	}
+	} catch (Exception exc) {
+		writeln(exc);
+		writeln("Continuing with MPI-Abort");
+		MPI_Abort(MPI_COMM_WORLD,1);
 	}
 
 }
