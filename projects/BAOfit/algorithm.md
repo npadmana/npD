@@ -1,0 +1,12 @@
+- Define the initial bounding box (theta, phi, r)
+- Loop over n 6D points from the qrng
+	- Choose a point in 3D space based on bounding box
+	- Test if point is in mask
+	- Choose a point in the radial shell 
+	- rotate the point to the first point
+	- test if second point is in mask
+		- remap r1 and r2 to z1 and z2, work out r1t and r2t
+		- work out true and apparent separation
+		- Add to mu bins
+- Normalize by number of points and Jacobian
+- Compute monopole, quadrupole and hexadecapole.
