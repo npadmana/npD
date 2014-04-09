@@ -4,6 +4,9 @@ be put in here, but changes to code functionality (especially which
 might break existing code) should be documented here.
 
 
+* Add in plplot routine
+* Add in GSL random number routines
+
 
 v0.3.0
 ------
