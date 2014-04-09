@@ -1,6 +1,6 @@
 include ../../make.vars
 
-GSLFILES=histogram.d histogram2d.d qrng.d integration.d interpolation.d
+GSLFILES=histogram.d histogram2d.d qrng.d integration.d interpolation.d rng.d
 GSLOBJS=${GSLFILES:%.d=${BUILDDIR}/%.o}
 GSLLINK=-L${GSL_DIR}/lib -lgsl -lgslcblas 
 
