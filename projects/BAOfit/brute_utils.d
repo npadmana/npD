@@ -129,8 +129,7 @@ class MuHist {
 
 		farr = new double[nmu];
 		warr = new double[nmu];
-		farr[0..$] = 0;
-		warr[0..$] = 0;
+		this.reset();
 	}
 
 	void add(double mu, double f1, double w1) {
@@ -140,6 +139,10 @@ class MuHist {
 		warr[imu] += w1;
 	}
 
+	void reset() {
+		farr[]=0;
+		warr[]=0;
+	}
 
 	double[3] multipoles() {
 		double[3] ret= [0,0,0];
