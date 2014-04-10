@@ -38,6 +38,10 @@ pure vec3 sph2cart(immutable vec3 x) {
 }
 
 
+pure double abs(immutable vec3 x) {
+	return sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
+}
+
 // Rotate second vector
 // vref is assumed to be in spherical coordinates
 pure vec3 rotvec(immutable vec3 vin, immutable vec3 vref) {
@@ -104,3 +108,73 @@ vec3 genPoint(double[] x, BoundingBox bb) {
 	return vout;
 }
 
+double[3] Pl024(double x) {
+	auto x2=x*x;
+	double[3] ret = [1,0,0];
+	ret[1] = (3*x2-1)/2;
+	ret[2] = (x2*(35*x2-30)+3)/8;
+	return ret;
+}
+
+immutable double[3] Pl024norm = [1,5,9];
+
+// Simple histogramming for mu
+// We keep track of both the func*weight and weight
+// -ve mu is automatically mapped to positive mu
+class MuHist {
+	this(int nmu) {
+		this.nmu = nmu;
+		dmu = (1 + 1.0e-10)/nmu;
+		invdmu = 1/dmu;
+
+		farr = new double[nmu];
+		warr = new double[nmu];
+		farr[0..$] = 0;
+		warr[0..$] = 0;
+	}
+
+	void add(double mu, double f1, double w1) {
+		if (mu < 0) mu=-mu;
+		auto imu = cast(int) (mu*invdmu);
+		farr[imu] += f1*w1;
+		warr[imu] += w1;
+	}
+
+
+	double[3] multipoles() {
+		double[3] ret= [0,0,0];
+		foreach(i, w1; warr) {
+			if (w1 > 0) ret[] += (farr[i]/w1) * Pl024((i+0.5)*dmu)[];
+		}
+		ret[] *= Pl024norm[] * dmu;
+		return ret;
+	}
+
+	private {
+		double dmu, invdmu;
+		double[] farr, warr;
+		int nmu;
+	}
+}
+
+unittest {
+	import std.stdio;
+	import specd.specd,gsl.rng;
+
+	describe("integrating x^2 + x^4")
+		.should("yield 8/15,26/21,8/35",(when) {
+			auto rng1 = new RNG();
+			auto mu1 = new MuHist(1000);
+			double x,x2;
+			foreach(i; 0..100000) {
+				x = rng1();
+				x2 = x*x;
+				mu1.add(x,x2*(1+x2),1);
+			}
+			auto ls = mu1.multipoles();
+		    (ls[0]).must.approxEqual(8./15.,1.0e-3,1.0e-3);	
+		    (ls[1]).must.approxEqual(26./21.,1.0e-3,1.0e-3);	
+		    (ls[2]).must.approxEqual(8./35.,1.0e-3,1.0e-3);	
+	});
+
+}
