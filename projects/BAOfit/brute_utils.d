@@ -1,4 +1,4 @@
-import std.math;
+import std.math, std.typecons;
 
 import physics.cosmo;
 
@@ -179,5 +179,46 @@ unittest {
 		    (ls[1]).must.approxEqual(26./21.,1.0e-3,1.0e-3);	
 		    (ls[2]).must.approxEqual(8./35.,1.0e-3,1.0e-3);	
 	});
+
+}
+
+// Compute s and mu
+Tuple!(double,double) smu(immutable vec3 x, immutable vec3 y) {
+	double s1, l1, s2=0, l2=0, sl=0, mu;
+	foreach (i; 0..3) {
+		s1 = x[i] - y[i];
+		l1 = x[i] + y[i];
+		s2 += s1*s1; 
+		l2 += l1*l1;
+		sl += s1*l1;
+	}
+
+	if (s2 < 1.0e-50) return tuple(0.,0.);
+	s1 = sqrt(s2);
+	mu = sl/(s1*sqrt(l2));
+
+	return tuple(s1,mu);
+}
+
+unittest {
+	import specd.specd;
+	describe("Testing smu")
+		.should("test case 1 - purely radial:", (when) {
+			vec3 x = [1,1,1];
+			vec3 y = [2,2,2];
+			auto ret = smu(x,y);
+			(ret[0]).must.approxEqual(sqrt(3.0), 1.0e-6,1.0e-6);
+			(ret[1]).must.approxEqual(-1.0,1.0e-5,1.0e-5);
+			ret = smu(y,x);
+			(ret[0]).must.approxEqual(sqrt(3.0), 1.0e-6,1.0e-6);
+			(ret[1]).must.approxEqual(1.0,1.0e-5,1.0e-5);
+		})
+		.should("test case 2 - purely tangential:", (when) {
+			vec3 x = [1,1,1];
+			vec3 y = [-1,1,1];
+			auto ret = smu(x,y);
+			(ret[0]).must.approxEqual(2, 1.0e-6,1.0e-6);
+			(ret[1]).must.approxEqual(0.0,1.0e-5,1.0e-5);
+		});
 
 }
