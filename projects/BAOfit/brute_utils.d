@@ -1,6 +1,7 @@
-import std.math, std.typecons;
+module brute_utils;
 
-import physics.cosmo;
+import std.math, std.typecons;
+import physics.cosmo, physics.constants;
 
 alias vec3 = double[3];
 
@@ -14,9 +15,12 @@ auto genComdis(double OmM, double zmax=2, int nz=2000) {
 	c.z = new double[nz];
 	c.r = new double[nz];
 	auto cc = comDis(SimpleLCDM(1,OmM));
+	auto cH0 = cLight_kms/100;
+	double a1;
 	foreach(i, ref z1; c.z) {
 		z1 = i*dz;
-		c.r[i] = cc(z1);
+		a1 = 1/(1+z1);
+		c.r[i] = cc(a1)*cH0;
 	}
 	return c;
 }
@@ -25,7 +29,7 @@ auto genComdis(double OmM, double zmax=2, int nz=2000) {
 // Convert spherical to Cartesian vectors
 //   spherical vectors are organized as r,theta,phi
 //   cartesian as x,y,z
-pure vec3 sph2cart(immutable vec3 x) {
+pure vec3 sph2cart(in vec3 x) {
 	auto ct = cos(x[1]); 
 	auto st = sin(x[1]);
 	auto cp = cos(x[2]);
@@ -38,13 +42,13 @@ pure vec3 sph2cart(immutable vec3 x) {
 }
 
 
-pure double abs(immutable vec3 x) {
+pure double abs(in vec3 x) {
 	return sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
 }
 
 // Rotate second vector
 // vref is assumed to be in spherical coordinates
-pure vec3 rotvec(immutable vec3 vin, immutable vec3 vref) {
+pure vec3 rotvec(in vec3 vin, in vec3 vref) {
 	auto ct = cos(vref[1]);
 	auto st = sin(vref[1]);
 	auto cp = cos(vref[2]);
@@ -101,7 +105,7 @@ struct BoundingBox {
 
 vec3 genPoint(double[] x, BoundingBox bb) {
 	vec3 vout;
-	vout[0] = bb.dr3*x[0] + bb.r3min;
+	vout[0] = cbrt(bb.dr3*x[0] + bb.r3min);
 	vout[1] = acos(bb.dmu*x[1] + bb.mumin);
 	vout[2] = bb.dphi*x[2] + bb.phimin;
 
@@ -182,8 +186,10 @@ unittest {
 
 }
 
+alias SMuTuple = Tuple!(double,double);
+
 // Compute s and mu
-Tuple!(double,double) smu(immutable vec3 x, immutable vec3 y) {
+SMuTuple smu(in vec3 x, in vec3 y) {
 	double s1, l1, s2=0, l2=0, sl=0, mu;
 	foreach (i; 0..3) {
 		s1 = x[i] - y[i];
