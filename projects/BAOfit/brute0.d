@@ -1,4 +1,4 @@
-import std.stdio, std.math;
+import std.stdio, std.math, std.conv, std.range;
 
 import gsl.interpolation, gsl.bindings.qrng;
 import brute_utils;
@@ -22,8 +22,8 @@ class BruteGaussianFullSky {
 		auto sp = new Spline(zred, rcom);
 		rmin = sp(zmin);
 		rmax = sp(zmax);
-		writef("zmin=%f ---> rmin=%f\n",zmin,rmin);
-		writef("zmax=%f ---> rmax=%f\n",zmax,rmax);
+		writef("#zmin=%f ---> rmin=%f\n",zmin,rmin);
+		writef("#zmax=%f ---> rmax=%f\n",zmax,rmax);
 		
 		// Generate baseline bounding box
 		bb1 = BoundingBox(0,PI,0,2*PI,rmin,rmax);
@@ -117,11 +117,20 @@ class BruteGaussianFullSky {
 
 
 
-void main() {
-	writeln("Brute force evalution of integral over full sky...");
+void main(string[] args) {
+	if (args.length < 4) throw new Exception("args = <eps1> <eps2> <nrand in M>");
+	writeln("#Brute force evalution of integral over full sky...");
+	auto eps1 = to!double(args[1]);
+	auto eps2 = to!double(args[2]);
+	auto nrand = to!int(args[3])*1_000_000;
 	auto test = new BruteGaussianFullSky(0.55,0.0,0.0);
-	auto t2 = test.doOne(110.0,111.0,1_000_000);
-	writeln(t2);
+	writeln("#Gaussian correlation function");
+	writef("# eps1=%f, eps2=%f, nmax(M)=%d\n",eps1,eps2, nrand/1_000_000);
+
+	foreach(r1; iota(80.0,140)) {
+		auto t2 = test.doOne(r1,r1+1,nrand);
+		writef("%6.3f %6.3f %20.10e %20.10e %20.10e\n",r1,r1+1,t2[0],t2[1],t2[2]);
+	}
 
 }
 
