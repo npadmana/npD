@@ -4,14 +4,14 @@ import gsl.interpolation, gsl.bindings.qrng;
 import brute_utils;
 
 class BruteGaussianFullSky {
-	this(double zref, double eps1, double eps2) {
+	this(double zref, double beta, double gamma) {
 		// Parameters
 		omegaM = 0.27;
 		zmin = 0.45;
 		zmax = 0.7;
 		this.zref= zref;
-		this.eps1 = eps1;
-		this.eps2 = eps2;
+		this.beta = beta;
+		this.gamma = gamma;
 
 		// Work out fiducial cosmology grid
 		auto ret = genComdis(omegaM, 2,2000);
@@ -89,8 +89,8 @@ class BruteGaussianFullSky {
 			zred2 = cosmo(rr2);
 			
 			// Work out new r1 and r2, scale x1 and x2
-			scal1 = 1 + eps1*(zred1-zref) + eps2*(zred1-zref)^^2;
-			scal2 = 1 + eps1*(zred2-zref) + eps2*(zred2-zref)^^2;
+			scal1 = 1 + beta*(zred1-zref) + gamma*(zred1-zref)^^2;
+			scal2 = 1 + beta*(zred2-zref) + gamma*(zred2-zref)^^2;
 			xyz1[] = xyz1[]*scal1;
 			xyz2[] = xyz2[]*scal2;
 			
@@ -109,7 +109,7 @@ class BruteGaussianFullSky {
 	private {
 		double omegaM, zmin, zmax, rmin, rmax;
 		double[] zred, rcom;
-		double zref, eps1, eps2;
+		double zref, beta, gamma;
 		BoundingBox bb1;
 	}
 
@@ -118,14 +118,14 @@ class BruteGaussianFullSky {
 
 
 void main(string[] args) {
-	if (args.length < 4) throw new Exception("args = <eps1> <eps2> <nrand in M>");
+	if (args.length < 4) throw new Exception("args = <beta> <gamma> <nrand in M>");
 	writeln("#Brute force evalution of integral over full sky...");
-	auto eps1 = to!double(args[1]);
-	auto eps2 = to!double(args[2]);
+	auto beta = to!double(args[1]);
+	auto gamma = to!double(args[2]);
 	auto nrand = to!int(args[3])*1_000_000;
-	auto test = new BruteGaussianFullSky(0.55,eps1, eps2);
+	auto test = new BruteGaussianFullSky(0.55,beta, gamma);
 	writeln("#Gaussian correlation function");
-	writef("# eps1=%f, eps2=%f, nmax(M)=%d\n",eps1,eps2, nrand/1_000_000);
+	writef("# beta=%f, gamma=%f, nmax(M)=%d\n",beta,gamma, nrand/1_000_000);
 
 	foreach(r1; iota(80.0,140)) {
 		auto t2 = test.doOne(r1,r1+1,nrand);
