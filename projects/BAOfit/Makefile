@@ -1,13 +1,14 @@
 include ${NPD_DIR}/make.vars
 
 
-SRCS=brute0.d
+SRCS=brute0.d brute1.d
 COMMON=brute_utils.d
 EXECS=${SRCS:%.d=${BUILDDIR}/%.x}
 GSLLINK=-L${NPD_LIB} -L${GSL_DIR}/lib -lgsld -lgsl -lgslcblas 
 COSMO=${NPD_DIR}/projects/physics/cosmo.d ${NPD_DIR}/projects/physics/constants.d
 TEST=${NPD_DIR}/etc/test/testmain.d
 INC=-I${NPD_DIR}/projects
+INI=${NPD_DIR}/projects/ini/inifile.d
 
 all : ${EXECS}
 
@@ -25,8 +26,8 @@ unittests : ${COMMON}
 #
 .SUFFIXES:
 
-${BUILDDIR}/%.x: %.d ${COMMON} ${COSMO}
-	${DC} ${DCFLAGS} -O -inline ${INC} $^  -of${BUILDDIR}/$*.o 
+${BUILDDIR}/%.x: %.d ${COMMON}
+	${DC} ${DCFLAGS} -O -inline ${INC} $^ ${COSMO} ${INI} -of${BUILDDIR}/$*.o 
 	${CC} ${LFLAGS} -o $@ ${BUILDDIR}/$*.o ${GSLLINK} ${PHOBOSLIB} 
 
 
