@@ -123,7 +123,7 @@ void main(string[] args) {
 	auto eps1 = to!double(args[1]);
 	auto eps2 = to!double(args[2]);
 	auto nrand = to!int(args[3])*1_000_000;
-	auto test = new BruteGaussianFullSky(0.55,0.0,0.0);
+	auto test = new BruteGaussianFullSky(0.55,eps1, eps2);
 	writeln("#Gaussian correlation function");
 	writef("# eps1=%f, eps2=%f, nmax(M)=%d\n",eps1,eps2, nrand/1_000_000);
 
