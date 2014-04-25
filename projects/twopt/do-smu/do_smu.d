@@ -167,9 +167,9 @@ void runmain(char[][] args) {
 
 		// Build trees
 		
-		// Broadcast
-		Bcast(darr, 0, MPI_COMM_WORLD);
-		Bcast(rarr, 0, MPI_COMM_WORLD);
+		// Broadcast -- hardcode the blocksize here
+		Bcast(darr, 0, MPI_COMM_WORLD, 10_000_000);
+		Bcast(rarr, 0, MPI_COMM_WORLD, 10_000_000);
 
 		// Split
 		dsplit = Split(darr, MPI_COMM_WORLD);
