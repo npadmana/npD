@@ -16,7 +16,7 @@ else
 endif
 
 unittests : libmpid
-	${DC} ${DCFLAGS} -version=${MPIVERSION} ${DSRCS} -of${BUILDDIR}/mpi_testing.o -version=TESTING
+	${DC} ${DCFLAGS} -version=${MPIVERSION} ${DSRCS} -of${BUILDDIR}/mpi_testing.o -version=TESTING -unittest
 	${MPICC} ${LFLAGS} -o ${BUILDDIR}/mpi_testing.x ${BUILDDIR}/mpi_testing.o ${COBJS} ${PHOBOSLIB}
 
 cleaninstall : cleanest

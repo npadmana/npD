@@ -102,7 +102,8 @@ int MPI_Init(ref char[][] args) {
 
 
 // Broadcast wrapper
-void Bcast(T) (ref T[] arr, int root, MPI_Comm comm) {
+// if blocksize =0, do as one block
+void Bcast(T) (ref T[] arr, int root, MPI_Comm comm, ulong blocksize=0) {
 	int rank;
 	ulong n;
 	MPI_Comm_rank(comm,&rank);
@@ -111,7 +112,18 @@ void Bcast(T) (ref T[] arr, int root, MPI_Comm comm) {
 	} 
 	MPI_Bcast(&n, 1, MPI_UNSIGNED_LONG, root, comm);
 	arr.length = n;
-	MPI_Bcast(cast(void*)&arr[0], to!int(n*T.sizeof), MPI_CHAR, root, comm);
+
+	// Work out the number of blocks to send
+	ulong nblocks=0;
+	if (blocksize >0) nblocks=n/blocksize;
+	auto rem = n - nblocks*blocksize;
+	ulong curpos=0;
+	foreach (i; 0..nblocks) {
+		MPI_Bcast(cast(void*)&arr[curpos], to!int(blocksize*T.sizeof), MPI_CHAR, root, comm);
+		curpos += blocksize;
+	}
+	// Do the remainder
+	if (rem >0) MPI_Bcast(cast(void*)&arr[curpos], to!int(rem*T.sizeof), MPI_CHAR, root, comm);
 }
 
 
@@ -144,16 +156,29 @@ version(TESTING) {
 
 		// Test BCast
 		auto test = [1.0, 2.0, 3.0, 10.0];
+		void test_blocksize(ulong n){
+			typeof(test) test2;
+			if (rank==0) {
+				test2.length = test.length;
+				test2[] = test[];
+			}		
+			Bcast(test2, 0, MPI_COMM_WORLD, n);
+			assert(test == test2);
+		}
+		test_blocksize(0);
+		test_blocksize(1);
+		test_blocksize(2);
+		test_blocksize(3);
+		test_blocksize(4);
+		test_blocksize(10);
+
+		// Test reduce 
 		typeof(test) test2;
 		if (rank==0) {
 			test2.length = test.length;
 			test2[] = test[];
 		}		
-
 		Bcast(test2, 0, MPI_COMM_WORLD);
-		assert(test == test2);	
-
-		// Test reduce 
 		MPI_Reduce(cast(void*)&test[0], cast(void*)&test2[0],to!int(test.length), MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 		test[] = size*test[];
 		if (rank == 0) {
