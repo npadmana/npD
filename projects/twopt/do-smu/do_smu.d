@@ -78,10 +78,7 @@ void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf) {
 
 
  
-void main(char[][] args) {
-	if (MPI_Init(args) != 0) throw new Exception("Unable to initialize MPI");
-	scope(exit) MPI_Finalize();
-	
+void runmain(char[][] args) {
 	//  Get rank
 	int rank,size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -231,5 +228,21 @@ void main(char[][] args) {
 		}
 
 	}
+
+}
+
+
+void main(char[][] args) {
+	if (MPI_Init(args) != 0) throw new Exception("Unable to initialize MPI");
+	scope(success) MPI_Finalize();
+	
+	try {
+		runmain(args);
+	} catch (Exception exc) {
+		writeln(exc);
+		writeln("Continuing with MPI-Abort");
+		MPI_Abort(MPI_COMM_WORLD,1);
+	} 
+
 
 }
