@@ -26,9 +26,31 @@ struct Cap {
 	}
 
 	void read(string str) {
-		if (formattedRead(str, "%s %s %s %s",&x,&y,&z,&cm)!=4) 
+		if (formattedRead(str, " %s %s %s %s",&x,&y,&z,&cm)!=4) 
 			throw new Exception(format("Invalid cap string : %s", str));
 	}
+}
+
+unittest {
+	import specd.specd;
+
+	describe("test cap reading")
+		.should("read in cap 1", (when) {
+				Cap c;
+				c.read("1 2 3 4");
+				c.x.must.equal(1);
+				c.y.must.equal(2);
+				c.z.must.equal(3);
+				c.cm.must.equal(4);
+				})
+		.should("read in cap 2", (when) {
+				Cap c;
+				c.read(" -0.595204424336759 0.334011779180069 0.730867857152655 -0.000338121510756628");
+				c.x.must.equal(-0.595204424336759);
+				c.y.must.equal(0.334011779180069);
+				c.z.must.equal(0.730867857152655);
+				c.cm.must.equal(-0.000338121510756628);
+				});
 }
 
 // Note on the polygon implementation : 
