@@ -166,7 +166,7 @@ class SimplePix : Pixel {
 	long ps, p2;
 }
 
-struct Mask {
+class Mask {
 	Polygon[] polys;
 	long npoly;
 
@@ -261,7 +261,7 @@ pixelization 6s
 				auto ff = File.tmpfile();
 				ff.writeln(p1);
 				ff.rewind();
-				Mask m = Mask(ff);
+				auto m = new Mask(ff);
 				m.npoly.must.equal(0);
 				m.pixelres.must.equal(6);
 				m.pixeltype.must.equal("s");
@@ -294,7 +294,7 @@ polygon       2717 ( 4 caps, 0.285714285714286 weight, 1903 pixel, 7.505025337e-
 				auto ff = File.tmpfile();
 				ff.writeln(p2);
 				ff.rewind();
-				Mask m = Mask(ff);
+				auto m = new Mask(ff);
 				m.npoly.must.equal(2);
 				m.pixelres.must.equal(6);
 				m.pixeltype.must.equal("s");
