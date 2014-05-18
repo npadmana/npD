@@ -25,7 +25,7 @@ struct Cap {
 		return (cm < 0) ? (cdot > -cm) : (cdot < cm);
 	}
 
-	void read(string str) {
+	void read(Char)(Char[] str) {
 		if (formattedRead(str, " %s %s %s %s",&x,&y,&z,&cm)!=4) 
 			throw new Exception(format("Invalid cap string : %s", str));
 	}
@@ -72,8 +72,10 @@ struct Polygon {
 	void readCaps(File ff) {
 		caps = new Cap[ncaps];
 		try {
-			foreach (ii,icap; caps) 
-				icap.read(chomp(ff.readln()));
+			foreach (ii,ref icap; caps) {
+				auto str = ff.readln();
+				icap.read(str);
+			}
 		} catch (Exception exc) {
 			throw new Exception(format("Error processing polygon %s",polyid));
 		}
@@ -81,15 +83,15 @@ struct Polygon {
 
 	// str is the current line of the file
 	// ff is the rest of the File
-	void parsePolyPixel(string str, File ff) {
-		if (formattedRead(str, "polygon %s ( %s caps, %s weight, %s pixel, %s str):", 
+	void parsePolyPixel(Char)(Char[] str, File ff) {
+		if (formattedRead(str, " polygon %s ( %s caps, %s weight, %s pixel, %s str", 
 					&polyid, &ncaps, &wt, &pixelid, &area)!=5) 
 			throw new Exception(format("Error parsing polygon :%s",str));
 		readCaps(ff);
 	}
 
-	void parsePoly(string str, File ff) {
-		if (formattedRead(str, "polygon %s ( %s caps, %s weight, %s str):", 
+	void parsePoly(Char)(Char[] str, File ff) {
+		if (formattedRead(str, " polygon %s ( %s caps, %s weight, %s str", 
 					&polyid, &ncaps, &wt, &pixelid, &area)!=4) 
 			throw new Exception(format("Error parsing polygon :%s",str));
 		readCaps(ff);
@@ -97,7 +99,51 @@ struct Polygon {
 
 }
 
-class SimplePix {
+unittest {
+	import specd.specd;
+
+	immutable string p1 =
+r"polygon       3335 ( 11 caps, 0.940677966101695 weight, 1967 pixel, 0.000931280881719 str):
+ 0 0 1 -0.28125
+ -0.595204424336759 0.334011779180069 0.730867857152655 -0.000338121510756628
+ -0.626932716191945 0.333635506002699 0.704018975953428 -0.000338121510756628
+ -0.57246304752218 0.370945450746565 0.73122194427687 -0.000338121510756628
+ -0.637522900036536 0.369210132475902 0.676201471461082 -0.000338121510756628
+ -0.579821879302659 0.401292950223096 0.709063154016041 -0.000338121510756628
+ -0.611597631674299 0.399737763372513 0.682757685759984 -0.000338121510756628
+ -0.555570233019602 -0.831469612302545 0 1
+ -0.471396736825998 -0.881921264348355 0 -1
+ 0 0 1 0.3125
+ -0.6040061775335 0.366552730167833 0.707683286158347 0.000336928005040634
+";
+
+	describe("test polygon reading")
+		.should("read polygon p1", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p1);
+				ff.rewind();
+				auto str = ff.readln();
+				Polygon p;
+				p.parsePolyPixel(str, ff);
+				p.polyid.must.equal(3335);
+				p.ncaps.must.equal(11);
+				p.caps.length.must.equal(11);
+				p.pixelid.must.equal(1967);
+				p.wt.must.equal(0.940677966101695);
+				p.area.must.equal(0.000931280881719);
+				// Do spot checks on caps
+				p.caps[0].z.must.equal(1);
+				p.caps[10].y.must.equal(0.366552730167833);
+				p.caps[5].cm.must.equal(-0.000338121510756628);
+				});
+}
+	
+
+abstract class Pixel {
+	long pixelnum(double theta, double phi);
+}
+
+class SimplePix : Pixel {
 	this(int pixelres) {
 		res= pixelres;
 		ps=0;p2=1;
@@ -109,7 +155,7 @@ class SimplePix {
 		}
 	}
 
-	long pixelnum(double theta, double phi) {
+	override final long pixelnum(double theta, double phi) {
 		double cth = cos(theta);
 		long n = (cth==1)?0:cast(long)ceil((1-cth)*0.5*p2)-1;
 		long m = cast(long)floor(phi*0.5*M_1_PI*p2);
@@ -122,9 +168,148 @@ class SimplePix {
 
 struct Mask {
 	Polygon[] polys;
+	long npoly;
 
 	// Pixel information
-	long[] pixelndx, npoly;
+	long[] pixelIndex, numPolyInPixel;
 	int pixelres=-1;
-	char pixeltype='u';
+	string pixeltype="u";
+	Pixel pix;
+
+	this(string fn) {
+		this(File(fn));
+	}
+
+	this(File ff) {
+		int res;
+		long ipoly=0;
+		// Read in the number of polygons, stop if does not look correct
+		res = ff.readf(" %s polygons",&npoly);
+		if (res != 1) throw new Exception("Cannot parse first line of polygon file");
+		polys = new Polygon[npoly];
+		long maxpixelId=-1;
+		long ncaps=0;
+		foreach (ll; ff.byLine()) {
+			// Check to see if this is a polygon line or a pixelization line
+			if (canFind(ll, "pixelization")) {
+				res=formattedRead(ll, "pixelization %s%s",&pixelres, &pixeltype);
+				if (res != 2) throw new Exception("Unable to determine pixelization");
+				switch (pixeltype) {
+					case "s" : 
+						pix = new SimplePix(pixelres);
+						break;
+					default :
+						throw new Exception(format("Unknown pixel type %s",pixeltype));
+				}
+			} else if (canFind(ll, "polygon")) {
+				if (pixeltype != "u") {
+					polys[ipoly].parsePolyPixel(ll, ff);
+				} else {
+					polys[ipoly].parsePoly(ll, ff);
+				}
+				if (polys[ipoly].pixelid > maxpixelId) maxpixelId = polys[ipoly].pixelid;
+				ncaps += polys[ipoly].ncaps;
+				ipoly+=1;
+			}
+		}
+		if (ipoly != npoly) throw new Exception(format("Polygons read:%s, expected:%s",ipoly,npoly));
+
+		// Pixelization optimizations
+		if (pixelres >=0) {
+			pixelIndex = new long[maxpixelId+1];
+			numPolyInPixel = new long[maxpixelId+1];
+			numPolyInPixel[] = 0;
+
+			// Sort polygon array based on pixelid
+			sort!"a.pixelid < b.pixelid"(polys);
+
+			foreach(ii,p1; polys) {
+				if (numPolyInPixel[p1.pixelid] == 0) pixelIndex[p1.pixelid]=ii;
+				numPolyInPixel[p1.pixelid] += 1;
+			}
+		}
+
+		// Reorganize memory so that the caps are contiguous
+		caplist = new Cap[ncaps];
+		long icap = 0;
+		long jcap;
+		foreach(ref p1; polys) {
+			jcap = icap + p1.ncaps;
+			caplist[icap..jcap] = p1.caps;
+			p1.caps = caplist[icap..jcap];
+			icap = jcap;
+		}
+	// Constructor ends
+	}
+	
+	// Caplist
+	private {
+		Cap[] caplist;
+	}
+
+}
+
+unittest {
+	import specd.specd;
+
+	immutable string p1 = r"0 polygons
+pixelization 6s
+";
+
+	describe("Test setting of pixelization")
+		.should("pixelnum should be 6, pixeltype should be s", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p1);
+				ff.rewind();
+				Mask m = Mask(ff);
+				m.npoly.must.equal(0);
+				m.pixelres.must.equal(6);
+				m.pixeltype.must.equal("s");
+				});
+	
+	immutable string p2 =
+r"2 polygons
+pixelization 6s
+polygon       3335 ( 11 caps, 0.940677966101695 weight, 1967 pixel, 0.000931280881719 str):
+ 0 0 1 -0.28125
+ -0.595204424336759 0.334011779180069 0.730867857152655 -0.000338121510756628
+ -0.626932716191945 0.333635506002699 0.704018975953428 -0.000338121510756628
+ -0.57246304752218 0.370945450746565 0.73122194427687 -0.000338121510756628
+ -0.637522900036536 0.369210132475902 0.676201471461082 -0.000338121510756628
+ -0.579821879302659 0.401292950223096 0.709063154016041 -0.000338121510756628
+ -0.611597631674299 0.399737763372513 0.682757685759984 -0.000338121510756628
+ -0.555570233019602 -0.831469612302545 0 1
+ -0.471396736825998 -0.881921264348355 0 -1
+ 0 0 1 0.3125
+ -0.6040061775335 0.366552730167833 0.707683286158347 0.000336928005040634
+polygon       2717 ( 4 caps, 0.285714285714286 weight, 1903 pixel, 7.505025337e-06 str):
+ -0.626932716191945 0.333635506002699 0.704018975953428 0.000338121510756628
+ 0 0 1 0.28125
+ -0.616059677550777 0.303630185014314 0.726828167068535 0.000338121510756628
+ -0.471396736825998 -0.881921264348355 0 -1
+";
+
+	describe("Test simple read")
+		.should("parameters should match info above", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p2);
+				ff.rewind();
+				Mask m = Mask(ff);
+				m.npoly.must.equal(2);
+				m.pixelres.must.equal(6);
+				m.pixeltype.must.equal("s");
+				m.polys[1].polyid.must.equal(3335);
+				m.polys[1].ncaps.must.equal(11);
+				m.polys[1].caps.length.must.equal(11);
+				m.polys[1].pixelid.must.equal(1967);
+				m.polys[1].wt.must.equal(0.940677966101695);
+				m.polys[1].area.must.equal(0.000931280881719);
+				m.polys[0].polyid.must.equal(2717);
+				m.polys[0].ncaps.must.equal(4);
+				m.polys[0].caps.length.must.equal(4);
+				// Do spot checks on caps
+				m.polys[1].caps[0].z.must.equal(1);
+				m.polys[1].caps[10].y.must.equal(0.366552730167833);
+				m.polys[1].caps[5].cm.must.equal(-0.000338121510756628);
+				});
 }

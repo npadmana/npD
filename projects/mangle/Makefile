@@ -11,6 +11,8 @@ TEST=${NPD_DIR}/etc/test/testmain.d
 # 	ar -ru ${NPD_LIB}/libgsld.a ${GSLOBJS}
 # endif
 
+testcompile :
+	${DC} -c ${FILES} -of${BUILDDIR}/mangle.o
 
 unittests :
 	${DC} -c -unittest ${TEST} -I.. -I${NPD_DIR}/include ${FILES} -of${BUILDDIR}/mangle_unittests.o
