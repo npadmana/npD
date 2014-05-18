@@ -59,7 +59,7 @@ unittest {
 // However, since the caps are stored in a slice, the underlying array can be reallocated, so that 
 // the caps are all contiguously stored in memory.
 struct Polygon {
-	long polyid;
+	long polyid=-1;
 	long pixelid=-1;
 	int ncaps;
 	double wt,area;
