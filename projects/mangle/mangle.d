@@ -7,6 +7,7 @@ module mangle;
 import std.math, std.algorithm, std.format, std.string, std.stdio;
 
 alias Point = double[3];
+immutable double RADEG = PI/180;
 
 Point thetaphi2point(double theta, double phi) {
 	Point p;
@@ -67,6 +68,11 @@ struct Polygon {
 	
 	bool inside(Point p) {
 		return all!(cap=>cap.inside(p))(caps);
+	}
+
+	bool inside(double theta, double phi) {
+		auto pt = thetaphi2point(theta, phi);
+		return inside(pt);
 	}
 
 	void readCaps(File ff) {
@@ -135,6 +141,26 @@ r"polygon       3335 ( 11 caps, 0.940677966101695 weight, 1967 pixel, 0.00093128
 				p.caps[0].z.must.equal(1);
 				p.caps[10].y.must.equal(0.366552730167833);
 				p.caps[5].cm.must.equal(-0.000338121510756628);
+				});
+
+	describe("test polygon inside")
+		.should("148.057829,44.511586 is inside", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p1);
+				ff.rewind();
+				auto str = ff.readln();
+				Polygon p;
+				p.parsePolyPixel(str, ff);
+				p.inside((90-44.511586)*RADEG,148.057829*RADEG).must.be.True;
+				})
+		.should("223.783335,0.415690 is not inside", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p1);
+				ff.rewind();
+				auto str = ff.readln();
+				Polygon p;
+				p.parsePolyPixel(str, ff);
+				p.inside((90-0.415690)*RADEG,223.783335*RADEG).must.be.False;
 				});
 }
 	
@@ -240,6 +266,21 @@ class Mask {
 			icap = jcap;
 		}
 	// Constructor ends
+	}
+
+	Polygon findpoly(double theta, double phi) {
+		auto pt = thetaphi2point(theta, phi);
+		Polygon[] pr;
+		if (pixelres < 0) {
+			pr = polys;
+		} else {
+			auto thispix = pix.pixelnum(theta, phi);
+			if (numPolyInPixel[thispix]==0) return Polygon();
+			pr = polys[pixelIndex[thispix]..pixelIndex[thispix]+numPolyInPixel[thispix]];
+		}
+		auto ff = find!(x=>x.inside(pt))(pr);
+		if (ff.length==0) return Polygon();
+		return ff[0];
 	}
 	
 	// Caplist
