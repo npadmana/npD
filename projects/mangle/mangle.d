@@ -198,6 +198,7 @@ class Mask {
 
 	// Pixel information
 	long[] pixelIndex, numPolyInPixel;
+	long maxpixelId=-1;
 	int pixelres=-1;
 	string pixeltype="u";
 	Pixel pix;
@@ -213,7 +214,6 @@ class Mask {
 		res = ff.readf(" %s polygons",&npoly);
 		if (res != 1) throw new Exception("Cannot parse first line of polygon file");
 		polys = new Polygon[npoly];
-		long maxpixelId=-1;
 		long ncaps=0;
 		foreach (ll; ff.byLine()) {
 			// Check to see if this is a polygon line or a pixelization line
@@ -275,12 +275,16 @@ class Mask {
 			pr = polys;
 		} else {
 			auto thispix = pix.pixelnum(theta, phi);
-			if (numPolyInPixel[thispix]==0) return Polygon();
+			if ((thispix > maxpixelId) || (numPolyInPixel[thispix]==0)) return Polygon();
 			pr = polys[pixelIndex[thispix]..pixelIndex[thispix]+numPolyInPixel[thispix]];
 		}
 		auto ff = find!(x=>x.inside(pt))(pr);
 		if (ff.length==0) return Polygon();
 		return ff[0];
+	}
+
+	Polygon findpoly_radec(double ra, double dec) {
+		return findpoly((90-dec)*RADEG, ra*RADEG);
 	}
 	
 	// Caplist
@@ -353,4 +357,54 @@ polygon       2717 ( 4 caps, 0.285714285714286 weight, 1903 pixel, 7.505025337e-
 				m.polys[1].caps[10].y.must.equal(0.366552730167833);
 				m.polys[1].caps[5].cm.must.equal(-0.000338121510756628);
 				});
+
+	describe("Test terms in polygon or not")
+		.should("return polygon 3335 for 148.057829,44.511586", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p2);
+				ff.rewind();
+				auto m = new Mask(ff);
+				m.findpoly((90-44.511586)*RADEG,148.057829*RADEG).polyid.must.equal(3335);
+		})
+		.should("return polygon -1 for 223.783335,0.415690", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p2);
+				ff.rewind();
+				auto m = new Mask(ff);
+				m.findpoly((90-0.415690)*RADEG,223.783335*RADEG).polyid.must.equal(-1);
+		});
+
+	describe("Test terms in polygon or not")
+		.should("return polygon 3335 for 148.057829,44.511586", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p2);
+				ff.rewind();
+				auto m = new Mask(ff);
+				m.findpoly_radec(148.057829,44.511586).polyid.must.equal(3335);
+		})
+		.should("return polygon -1 for 223.783335,0.415690", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p2);
+				ff.rewind();
+				auto m = new Mask(ff);
+				m.findpoly_radec(223.783335,0.415690).polyid.must.equal(-1);
+		});
+
+	describe("Test terms in polygon or not without pixelization")
+		.should("return polygon 3335 for 148.057829,44.511586", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p2);
+				ff.rewind();
+				auto m = new Mask(ff);
+				m.pixelres=-1;
+				m.findpoly((90-44.511586)*RADEG,148.057829*RADEG).polyid.must.equal(3335);
+		})
+		.should("return polygon -1 for 223.783335,0.415690", (when) {
+				auto ff = File.tmpfile();
+				ff.writeln(p2);
+				ff.rewind();
+				auto m = new Mask(ff);
+				m.pixelres=-1;
+				m.findpoly((90-0.415690)*RADEG,223.783335*RADEG).polyid.must.equal(-1);
+		});
 }
