@@ -20,6 +20,13 @@ unittests :
 		-L${NPD_LIB} -lspecd ${PHOBOSLIB}
 	${BUILDDIR}/mangle_unittests.x
 
+examples : ${BUILDDIR}/mangle_example.x
+
+${BUILDDIR}/mangle_example.x : ${FILES} mangle_example.d 
+	${DC} -c ${FILES} mangle_example.d -of${BUILDDIR}/mangle_example.o
+	${CC} ${LFLAGS} -o ${BUILDDIR}/mangle_example.x ${BUILDDIR}/mangle_example.o ${PHOBOSLIB}
+
+
 
 cleaninstall :
 	
