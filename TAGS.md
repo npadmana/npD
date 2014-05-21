@@ -3,6 +3,10 @@ we can keep track of which versions we need. Not all changes need to
 be put in here, but changes to code functionality (especially which 
 might break existing code) should be documented here.
 
+v0.3.2
+------
+* Basic Mangle implementation added to code
+
 v0.3.1
 ------
 * Bcast in MPI now takes in blocksize option
