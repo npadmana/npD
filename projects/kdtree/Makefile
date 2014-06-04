@@ -5,7 +5,7 @@ GSLLINK=-L${GSL_DIR}/lib -lgsl -lgslcblas
 
 
 unittests :
-	${DC} ${DCFLAGS} -main -unittest -of${BUILDDIR}/paircounters_unittest.o -version=TESTMAIN ${DSRCS}
+	${DC} ${DCFLAGS} -unittest -of${BUILDDIR}/paircounters_unittest.o -version=TESTMAIN ${DSRCS} testmain.d
 	${CC} ${LFLAGS} -o ${BUILDDIR}/paircounters_unittest.x ${BUILDDIR}/paircounters_unittest.o \
 			${GSLLINK} -L${NPD_LIB} -lgsld ${PHOBOSLIB}
 	${BUILDDIR}/paircounters_unittest.x
