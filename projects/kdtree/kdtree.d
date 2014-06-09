@@ -1,9 +1,9 @@
 module kdtree;
 
-import std.algorithm, std.traits, std.math;
+import std.algorithm, std.traits, std.math, std.array;
 
 // Template constraints for points 
-private template isPoint(P, int Dim) {
+private template isPoint(P, ulong Dim) {
 	const isPoint = hasMember!(P, "x") &&
 		(P().x.length == Dim);
 }
@@ -25,7 +25,7 @@ unittest {
 }
 
 
-void splitOn(P, int Dim) (P[] points, int idim) 
+void splitOn(P, ulong Dim) (P[] points, int idim) 
 	if (isPoint!(P, Dim))
 {
 	auto nel = points.length;
@@ -48,13 +48,15 @@ unittest {
 }
 
 
-struct VantagePoint(P, int Dim) 
+struct VantagePoint(P, ulong Dim) 
 	if (isPoint!(P, Dim) && hasDist!P)
 {
 	P vp; // Store the vantage point as a P, so that we can 
 	      // use distance calculations on it.
 	double rdist;
+	ulong maxdir;
 	alias typeof(vp.x) CoordType;
+	alias typeof(this) MyType;
 
 	this(P)(P[] Points) 
 		if (isPoint!(P, Dim)) 
@@ -70,6 +72,8 @@ struct VantagePoint(P, int Dim)
 			}
 		}
 		vp.x[] = (xmin[] + xmax[])/2;
+		xmax[] -= xmin[];
+		maxdir = Dim - minPos!("a>b")(xmax[]).length;
 
 		// Now find the encompassing sphere
 		rdist=0;
@@ -97,5 +101,11 @@ unittest {
 	assert(v1.vp.x[0]==0);
 	assert(v1.vp.x[1]==0);
 	assert(approxEqual(v1.rdist,sqrt(2.0)));
+	auto p2 = [Point([1,0]), Point([-3,0])];
+	auto v2 = VantagePoint!(Point,2)(p2);
+	assert(v2.vp.x[0]==-1);
+	assert(v2.vp.x[1]==0);
+	assert(v2.rdist==2);
+	assert(v2.maxdir==0);
 }
 
