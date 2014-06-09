@@ -65,15 +65,23 @@ void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf) {
 	string rfn_save="";
 	bool flag;
 	Particle[] darr, rarr;
-	foreach (dfn, rfn; lockstep(dfns, rfns)) {
-		darr = readFile(dfn);
-		if (rfn != rfn_save) rarr = readFile(rfn);
-		rfn_save = rfn;
-		dbuf.push(darr);
-		rbuf.push(rarr);
-		send(ownerTid, true);
-		flag = receiveOnly!bool();
-	}
+	// The reader process needs to protect against failures -- these may not propagate cleanly down to the user.
+	try {
+		foreach (dfn, rfn; lockstep(dfns, rfns)) {
+			darr = readFile(dfn);
+			if (rfn != rfn_save) rarr = readFile(rfn);
+			rfn_save = rfn;
+			dbuf.push(darr);
+			rbuf.push(rarr);
+			send(ownerTid, true);
+			flag = receiveOnly!bool();
+		}
+	} catch (Exception exc) {
+			writeln(exc);
+			writeln("Error in file reader...");
+			writeln("Continuing with MPI-Abort");
+			MPI_Abort(MPI_COMM_WORLD,1);
+		}
 }
 
 
