@@ -250,3 +250,33 @@ unittest {
 	assert(root.arr is parr1);
 	assert(isSorted!("a.x[1] < b.x[1]")(parr1));
 }
+
+unittest {
+	import std.random, std.range;
+	struct Point {
+		float[3] x; 
+		
+		this(double xmax) {
+			x[0] = uniform(0.0,xmax);
+			x[1] = uniform(0.0,xmax);
+			x[2] = uniform(0.0,xmax);
+		}
+
+		double dist(Point p2) {
+			double r=0;
+			foreach(i;0..3) {
+				r += (x[i]-p2.x[i])^^2;
+			}
+			return sqrt(r);
+		}
+	}
+	Point[12345] parr;
+	foreach (ref p1; parr) p1 = Point(100);
+	auto root = new KDNode!(Point,3)(parr);
+	int nel = 0;
+	foreach (kd; root) {
+		if (kd.isLeaf) nel += kd.arr.length;
+	}
+	assert(nel==parr.length); 
+}
+
