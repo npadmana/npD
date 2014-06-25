@@ -1,6 +1,6 @@
 module kdtree;
 
-import std.algorithm, std.traits, std.math, std.array;
+import std.algorithm, std.traits, std.math, std.array, std.typecons;
 
 // Template constraints for points 
 private template isPoint(P, ulong Dim) {
@@ -83,6 +83,26 @@ struct VantagePoint(P, ulong Dim)
 			if (rr > rdist) rdist=rr;
 		}
 	}
+
+	Tuple!(double, double) minmaxDist(MyType p2) {
+		double _min=0.0, _max=0.0;
+		double r1; // Distance between vantage points
+
+		r1 = vp.dist(p2.vp);
+		// Apply the first triangle inequality
+		_max = r1 + p2.rdist;
+		_min = r1 - p2.rdist;
+		if (_min < 0) _min=0;
+
+		// Second triangle inequality
+		_max = _max + rdist;
+		_min = _min - rdist;
+		if (_min < 0) _min = 0;
+
+		return tuple(_min, _max);
+	}
+
+
 }
 
 unittest {
@@ -109,3 +129,26 @@ unittest {
 	assert(v2.maxdir==0);
 }
 
+
+unittest {
+	
+	struct Point {
+		float[2] x;
+
+		double dist(Point p2) {
+			double r = (x[0]-p2.x[0])^^2;
+			r += (x[1] - p2.x[1])^^2;
+			return sqrt(r);
+		}
+	}
+	auto p1 = [Point([1,0]), Point([-1,0])];
+	auto v1 = VantagePoint!(Point,2)(p1);
+	auto p2 = [Point([10,0]), Point([8,0])];
+	auto v2 = VantagePoint!(Point,2)(p2);
+	auto res = v1.minmaxDist(v2);
+	assert(res[0]==7,"min dist fails");
+	assert(res[1]==11,"max dist fails");
+	res = v1.minmaxDist(v1);
+	assert(res[0]==0,"min dist fails");
+	assert(res[1]==2,"max dist fails");
+}
