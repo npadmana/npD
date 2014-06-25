@@ -25,7 +25,7 @@ unittest {
 }
 
 
-void splitOn(P, ulong Dim) (P[] points, int idim) 
+void splitOn(P, ulong Dim) (P[] points, ulong idim) 
 	if (isPoint!(P, Dim))
 {
 	auto nel = points.length;
@@ -151,4 +151,102 @@ unittest {
 	res = v1.minmaxDist(v1);
 	assert(res[0]==0,"min dist fails");
 	assert(res[1]==2,"max dist fails");
+}
+
+class KDNode(P, ulong Dim) 
+	if (isPoint!(P, Dim) && hasDist!P) 
+{
+	uint id;
+	P[] arr;
+	VantagePoint!(P, Dim) vp;
+
+	this(P)(P[] points, double minSize=0, uint minPart=1, uint id=0, bool buildTree=true) 
+	{
+		auto nel = points.length;
+		if (nel==0) throw new Exception("Cannot build around zero element array");
+		if (minPart < 1) throw new Exception("minPart cannot be less than 1");	
+		arr = points;
+		vp = VantagePoint!(P, Dim)(points);
+		this.id = id;
+
+		// Determines when to return
+		if (!buildTree) return;
+		if (nel <= minPart) return;
+		if (vp.rdist < minSize) return;
+
+		// Subdivide the tree
+		splitOn!(P,Dim)(arr, vp.maxdir);
+		auto pos = nel/2;
+		_left = new KDNode(arr[0..pos], minSize, minPart, 2*id+1, true);
+		_right = new KDNode(arr[pos..$], minSize, minPart, 2*id+2, true);
+	}
+
+	// Test if leaf or not
+	@property bool isLeaf() {
+		return (left is null) && (right is null);
+	}
+
+	@property KDNode left() {
+		return _left;
+	}
+
+	@property KDNode right() {
+		return _right;
+	}
+
+	// opApply -- directly from TDPL ("Overloading foreach")
+	int opApply(int delegate(KDNode!(P,Dim) node) dg) {
+		auto result = dg(this);
+		if (result) return result;
+		if (_left) {
+			result = _left.opApply(dg);
+			if (result) return result;
+		}
+		if (_right) {
+			result = _right.opApply(dg);
+			if (result) return result;
+		}
+		return 0;
+	}
+
+	private KDNode _left, _right;
+
+}
+
+unittest {
+	import std.random;
+	struct Point {
+		float[3] x;
+
+		double dist(Point p2) {
+			double r=0;
+			foreach(i;0..3) {
+				r += (x[i]-p2.x[i])^^2;
+			}
+			return sqrt(r);
+		}
+	}
+	auto parr1 = [Point([0,0,0]), Point([1,0,0]), Point([-1,0,0]), Point([-2,0,0])];
+	assert(!isSorted!("a.x[0] < b.x[0]")(parr1));
+	auto root = new KDNode!(Point,3)(parr1,0,2);	
+	// Ensure that the array was not copied
+	assert(root.arr is parr1);
+	assert(root.id == 0);
+	assert(root.vp.maxdir == 0);
+	assert(!root.isLeaf);
+	assert(root.left.isLeaf);
+	assert(root.left.id == 1);
+	assert(root.right.isLeaf);
+	assert(root.right.id == 2);
+	assert(root.left.arr.length == 2);
+	assert(root.right.arr.length == 2);
+	assert(isSorted!("a.x[0] < b.x[0]")(parr1));
+	parr1 = new Point[3561];
+	foreach (ref p1; parr1) {
+		p1.x[0] = 0; p1.x[2] = 0;
+		p1.x[1] = uniform(0.0,100.0);
+	}
+	root = new KDNode!(Point,3)(parr1,0,1);
+	assert(root.arr is parr1);
+	assert(isSorted!("a.x[1] < b.x[1]")(parr1));
 }
