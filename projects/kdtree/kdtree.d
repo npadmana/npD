@@ -280,4 +280,84 @@ unittest {
 	assert(nel==parr.length); 
 }
 
-//NEXT%% Copy over the DualTreeWalk case and make updates
+struct DualTreeWalk(P, ulong Dim)
+	if (isPoint!(P, Dim) && hasDist!P)
+{
+	alias KDNode!(P, Dim) MyNode;
+	alias typeof(this) MyWalk;
+	MyNode a, b;
+	double slo=double.max, shi=-double.max;
+
+	this (MyNode a, MyNode b, double slo, double shi) {
+		this.a = a;
+		this.b = b;
+		this.slo = slo; 
+		this.shi = shi;
+	} 
+
+	int opApply(int delegate(MyNode a, MyNode b) dg) {
+		auto res = a.vp.minmaxDist(b.vp);
+
+		// Prune
+		if (res[0] >= shi) return 0;
+		if (res[1] < slo) return 0;
+
+		// If the node if completely contained, open and proceed
+		if ((slo <= res[0]) && (res[1] < shi)) return dg(a,b);
+
+		// If nodes are both leaves
+		if (a.isLeaf && b.isLeaf) return dg(a,b);
+
+		// If one is a leaf
+		if (a.isLeaf) {
+			auto retval = MyWalk(a, b.left, slo, shi).opApply(dg);
+			if (retval) return retval;
+			retval = MyWalk(a, b.right, slo, shi).opApply(dg);
+			return retval;
+		}
+
+		if (b.isLeaf) {
+			auto retval = MyWalk(a.left, b, slo, shi).opApply(dg);
+			if (retval) return retval;
+			retval = MyWalk(a.right, b, slo, shi).opApply(dg);
+			return retval;
+		}
+
+		// If neither are leaves, pick the bigger one to split
+		if (a.arr.length > b.arr.length) {
+			auto retval = MyWalk(a.left, b, slo, shi).opApply(dg);
+			if (retval) return retval;
+			retval = MyWalk(a.right, b, slo, shi).opApply(dg);
+			return retval;
+		} else {
+			auto retval = MyWalk(a, b.left, slo, shi).opApply(dg);
+			if (retval) return retval;
+			retval = MyWalk(a, b.right, slo, shi).opApply(dg);
+			return retval;
+		}
+
+		return 0;
+	}
+}
+
+unittest {
+	import std.random;
+	struct Point {
+		float[2] x;
+
+		double dist(Point p2) {
+			double r=0;
+			foreach(i;0..2) {
+				r += (x[i]-p2.x[i])^^2;
+			}
+			return sqrt(r);
+		}
+	}
+
+	auto parr = [Point([1,1]), Point([1,-1]), Point([-1,-1]), Point([-1,1])];
+	auto root = new KDNode!(Point, 2)(parr,0,1);
+
+	foreach(a,b; DualTreeWalk!(Point,2)(root,root,0,0.5)) {
+		assert(a is b);
+	}
+}
