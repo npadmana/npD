@@ -1,8 +1,30 @@
 module paircounters;
 
+import std.parallelism;
+
 import kdtree, pairhist;
 
 
+// This is a helper function for parallel accumulates
+// 
+// This is a little ugly, so here is a full description of what this does
+//     T : Link to paircounter -- so that the appropriate accumulate can be called
+//     H : Type of data for local storage. In this case, these are independent histograms
+//     P : Point type
+//
+//     pool : The taskpool. This is only being sent in to get at the worker index
+//     store : The array for local storage. See IMPORTANT NOTE BELOW.
+//     arr1, arr2 : Point arrays
+//     scale : scale weights by this number.
+//
+//     It is assumed that H has an accumulate method.
+//
+// IMPORTANT NOTE : The taskpool sometimes runs jobs in the main thread with index=0. So store
+//  should be an array with nworkers+1 where 0 will be used by the main thread. 
+void parallelAccHelper(T, H, P)(T pair, TaskPool pool, H store, P[] arr1, P[] arr2, double scale) {
+	auto me = pool.workerIndex;
+	pair.accumulate(store[me],arr1,arr2,scale);
+}
 
 //*******************************
 //Basic paircounting class
@@ -31,6 +53,67 @@ class PairCounter(P, ulong Dim, HT)
 			accumulate(hist, a1.arr, b1.arr, scale);
 		}
 	}
+
+	void accumulateTreeParallel(KD a, KD b, int nworkers) {
+		// Allocate auxiliary storage
+		auto store = new HT[nworkers+1];
+		foreach (ref h1; store) {
+			h1 = new HT(hist);
+		}
+
+		auto isauto = a is b;
+		double scale;
+		// Create a new taskPool
+		auto pool = new TaskPool(nworkers);
+
+		auto walker = DT(a,b,rmin,rmax);
+		foreach(a1, b1; walker) {
+			// NOTE : This optimization is why we have two versions of this function, one
+			// with a fixed scale and one without. 
+			// DO NOT MERGE THESE ROUTINES WITHOUT CAREFULLY THINKING.
+			if (isauto && (a.id > b.id)) continue;  
+			if (isauto && (a.id < b.id)) {
+				scale = 2.0;
+			} else {
+				scale = 1.0;
+			}
+			auto t = task!(parallelAccHelper!(typeof(this),typeof(store),P))(this,pool, store, a1.arr, b1.arr, scale);
+			pool.put(t);
+		}
+
+		pool.finish(true);
+
+		hist.reset();
+		foreach (h1; store) {
+			hist += h1;
+		}
+	}
+
+	void accumulateTreeParallel(KD a, KD b, int nworkers, double scale) {
+		// Allocate auxiliary storage
+		auto store = new HT[nworkers+1];
+		foreach (ref h1; store) {
+			h1 = new HT(hist);
+		}
+
+		// Create a new taskPool
+		auto pool = new TaskPool(nworkers);
+
+		auto walker = DT(a,b,rmin,rmax);
+		foreach(a1, b1; walker) {
+			auto t = task!(parallelAccHelper!(typeof(this),typeof(store),P))(this,pool, store, a1.arr, b1.arr, scale);
+			pool.put(t);
+		}
+
+		pool.finish(true);
+
+		hist.reset();
+		foreach (h1; store) {
+			hist += h1;
+		}
+	}
+
+
 
 	// Debugging
 	void whoami() {
@@ -88,6 +171,17 @@ unittest {
 	assert(pp.hist[1]==720);
 	assert(pp.hist[2]==720);
 	
+	pp = new AngularPairCounter(3,4);
+	pp.accumulateTreeParallel(root, root,10);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
+
+	pp = new AngularPairCounter(3,4);
+	pp.accumulateTreeParallel(root, root,10,1);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
 
 	// Go over the poles
 	foreach (i;1..180) {
@@ -110,5 +204,16 @@ unittest {
 	assert(pp.hist[1]==720);
 	assert(pp.hist[2]==720);
 	
+	pp = new AngularPairCounter(3,4);
+	pp.accumulateTreeParallel(root, root,10);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
+
+	pp = new AngularPairCounter(3,4);
+	pp.accumulateTreeParallel(root, root,10,1);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
 }
 
