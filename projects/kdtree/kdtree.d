@@ -3,12 +3,12 @@ module kdtree;
 import std.algorithm, std.traits, std.math, std.array, std.typecons;
 
 // Template constraints for points 
-private template isPoint(P, ulong Dim) {
+template isPoint(P, ulong Dim) {
 	const isPoint = hasMember!(P, "x") &&
 		(P().x.length == Dim);
 }
 
-private template hasDist(P) {
+template hasDist(P) {
 	const hasDist = __traits(compiles, 
 			(P p1, P p2) {
 				double r = p1.dist(p2);

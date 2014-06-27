@@ -18,8 +18,21 @@ class Histogram2D {
 		this.ny = ny;
 	}
 
+	this(Histogram2D h1, bool reset=true) {
+		hist = gsl_histogram2d_clone(h1.hist);
+		if (reset) gsl_histogram2d_reset(hist);
+		this.nx = h1.nx;
+		this.ny = h1.ny;
+	}
+
+
 	~this() {
 		gsl_histogram2d_free(hist);
+	}
+
+	// Accumulate
+	void accumulate(double x, double y, double val=1) {
+		gsl_histogram2d_accumulate(hist,x,y,val);
 	}
 
 	// Overload index
@@ -125,9 +138,21 @@ class Histogram {
 		this.nx = nx;
 	}
 
+	this(Histogram h1, bool reset=true) {
+		hist = gsl_histogram_clone(h1.hist);
+		if (reset) gsl_histogram_reset(hist);
+		this.nx = h1.nx;
+	}
+
 	~this() {
 		gsl_histogram_free(hist);
 	}
+
+	// Accumulate
+	void accumulate(double x, double val=1) {
+		gsl_histogram_accumulate(hist,x,val);
+	}
+
 
 	// Overload index
 	double opIndex(int i) {

@@ -1,6 +1,6 @@
 module points;
 
-import std.math;
+import std.math, kdtree;
 
 struct CartesianPointNd(ulong Dim) {
 	alias typeof(this) MyType;
@@ -16,6 +16,7 @@ struct CartesianPointNd(ulong Dim) {
 }
 
 unittest {
+	assert(isPoint!(CartesianPointNd!3,3));
 	auto p1=CartesianPointNd!3([0,0,0]);
 	auto p2=CartesianPointNd!3([1,1,1]);
 	assert(approxEqual(p1.dist(p2), sqrt(3.0), 1.0e-5,1.0e-5));
@@ -32,7 +33,7 @@ struct Sphere2D {
 		x[0] = phi;
 		x[1] = theta;
 		if (isDeg) x[] *= PI/180;
-		if (isDec) x[1] -= PI_2;
+		if (isDec) x[1] = PI_2 - x[1];
 
 		// Set unit vector
 		nhat[0] = cos(x[0]) * sin(x[1]);
@@ -41,17 +42,43 @@ struct Sphere2D {
 			
 	}
 
+	// This formula is better at small angles... it may fail for large angles
 	double dist(Sphere2D p2) {
 		double r=0;
 		foreach(i,n1; nhat) {
-			r = n1*p2.nhat[i];
+			r += (n1-p2.nhat[i])^^2;
 		}
-		return acos(r);
+		return 2*asin(sqrt(r)/2);
 	}
 }
 
 unittest {
+	assert(isPoint!(Sphere2D,2));
+	assert(hasDist!Sphere2D);
 	auto p1 = Sphere2D(0,90,true,true);
 	auto p2 = Sphere2D(0,0,true,true);
 	assert(approxEqual(p1.dist(p2),PI_2, 1.0e-7, 1.0e-9));
+}
+
+// Edge cases
+unittest {
+	import std.stdio;
+	Sphere2D[] parr = new Sphere2D[360];
+	Sphere2D[] parr2 = new Sphere2D[360];
+	Sphere2D[] parr3 = new Sphere2D[360];
+	foreach (i,ref p1; parr) {
+		p1 = Sphere2D(i, 0, true, true);
+		parr2[i] = Sphere2D(i+180,0,true,true);
+		parr3[i] = Sphere2D(i-180,0,true,true);
+	}
+
+	double r;
+	foreach(i,p1;parr) {
+		r = p1.dist(p1);
+		assert(isFinite(r),"Fails at zero angle");
+		r = p1.dist(parr2[i]);
+		assert(isFinite(r),"Fails at +180");
+		r = p1.dist(parr3[i]);
+		assert(isFinite(r),"Fails at -180");
+	}
 }
