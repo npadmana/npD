@@ -86,22 +86,13 @@ struct VantagePoint(P, ulong Dim)
 
 unittest {
 	import std.stdio;
-	struct Point {
-		float[2] x;
-
-		double dist(Point p2) {
-			double r = (x[0]-p2.x[0])^^2;
-			r += (x[1] - p2.x[1])^^2;
-			return sqrt(r);
-		}
-	}
-	auto p1 = [Point([1,1]), Point([-1,-1])];
-	auto v1 = VantagePoint!(Point,2)(p1);
+	auto p1 = [Point2D([1,1]), Point2D([-1,-1])];
+	auto v1 = VantagePoint!(Point2D,2)(p1);
 	assert(v1.vp.x[0]==0);
 	assert(v1.vp.x[1]==0);
 	assert(approxEqual(v1.rdist,sqrt(2.0)));
-	auto p2 = [Point([1,0]), Point([-3,0])];
-	auto v2 = VantagePoint!(Point,2)(p2);
+	auto p2 = [Point2D([1,0]), Point2D([-3,0])];
+	auto v2 = VantagePoint!(Point2D,2)(p2);
 	assert(v2.vp.x[0]==-1);
 	assert(v2.vp.x[1]==0);
 	assert(v2.rdist==2);
@@ -111,19 +102,10 @@ unittest {
 
 unittest {
 	
-	struct Point {
-		float[2] x;
-
-		double dist(Point p2) {
-			double r = (x[0]-p2.x[0])^^2;
-			r += (x[1] - p2.x[1])^^2;
-			return sqrt(r);
-		}
-	}
-	auto p1 = [Point([1,0]), Point([-1,0])];
-	auto v1 = VantagePoint!(Point,2)(p1);
-	auto p2 = [Point([10,0]), Point([8,0])];
-	auto v2 = VantagePoint!(Point,2)(p2);
+	auto p1 = [Point2D([1,0]), Point2D([-1,0])];
+	auto v1 = VantagePoint!(Point2D,2)(p1);
+	auto p2 = [Point2D([10,0]), Point2D([8,0])];
+	auto v2 = VantagePoint!(Point2D,2)(p2);
 	auto res = v1.minmaxDist(v2);
 	assert(res[0]==7,"min dist fails");
 	assert(res[1]==11,"max dist fails");
@@ -194,20 +176,9 @@ class KDNode(P, ulong Dim)
 
 unittest {
 	import std.random;
-	struct Point {
-		float[3] x;
-
-		double dist(Point p2) {
-			double r=0;
-			foreach(i;0..3) {
-				r += (x[i]-p2.x[i])^^2;
-			}
-			return sqrt(r);
-		}
-	}
-	auto parr1 = [Point([0,0,0]), Point([1,0,0]), Point([-1,0,0]), Point([-2,0,0])];
+	auto parr1 = [Point3D([0,0,0]), Point3D([1,0,0]), Point3D([-1,0,0]), Point3D([-2,0,0])];
 	assert(!isSorted!("a.x[0] < b.x[0]")(parr1));
-	auto root = new KDNode!(Point,3)(parr1,0,2);	
+	auto root = new KDNode!(Point3D,3)(parr1,0,2);	
 	// Ensure that the array was not copied
 	assert(root.arr is parr1);
 	assert(root.id == 0);
@@ -220,38 +191,23 @@ unittest {
 	assert(root.left.arr.length == 2);
 	assert(root.right.arr.length == 2);
 	assert(isSorted!("a.x[0] < b.x[0]")(parr1));
-	parr1 = new Point[3561];
+	parr1 = new Point3D[3561];
 	foreach (ref p1; parr1) {
 		p1.x[0] = 0; p1.x[2] = 0;
 		p1.x[1] = uniform(0.0,100.0);
 	}
-	root = new KDNode!(Point,3)(parr1,0,1);
+	root = new KDNode!(Point3D,3)(parr1,0,1);
 	assert(root.arr is parr1);
 	assert(isSorted!("a.x[1] < b.x[1]")(parr1));
 }
 
 unittest {
 	import std.random, std.range;
-	struct Point {
-		float[3] x; 
-		
-		this(double xmax) {
-			x[0] = uniform(0.0,xmax);
-			x[1] = uniform(0.0,xmax);
-			x[2] = uniform(0.0,xmax);
-		}
-
-		double dist(Point p2) {
-			double r=0;
-			foreach(i;0..3) {
-				r += (x[i]-p2.x[i])^^2;
-			}
-			return sqrt(r);
-		}
+	Point3D[12345] parr;
+	foreach (ref p1; parr) {
+		foreach (ref x1; p1.x) x1=uniform(0,100);
 	}
-	Point[12345] parr;
-	foreach (ref p1; parr) p1 = Point(100);
-	auto root = new KDNode!(Point,3)(parr);
+	auto root = new KDNode!(Point3D,3)(parr);
 	int nel = 0;
 	foreach (kd; root) {
 		if (kd.isLeaf) nel += kd.arr.length;
@@ -321,22 +277,10 @@ struct DualTreeWalk(P, ulong Dim)
 
 unittest {
 	import std.random;
-	struct Point {
-		float[2] x;
+	auto parr = [Point2D([1,1]), Point2D([1,-1]), Point2D([-1,-1]), Point2D([-1,1])];
+	auto root = new KDNode!(Point2D, 2)(parr,0,1);
 
-		double dist(Point p2) {
-			double r=0;
-			foreach(i;0..2) {
-				r += (x[i]-p2.x[i])^^2;
-			}
-			return sqrt(r);
-		}
-	}
-
-	auto parr = [Point([1,1]), Point([1,-1]), Point([-1,-1]), Point([-1,1])];
-	auto root = new KDNode!(Point, 2)(parr,0,1);
-
-	foreach(a,b; DualTreeWalk!(Point,2)(root,root,0,0.5)) {
+	foreach(a,b; DualTreeWalk!(Point2D,2)(root,root,0,0.5)) {
 		assert(a is b);
 	}
 }
