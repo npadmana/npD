@@ -2,7 +2,7 @@ module paircounters;
 
 import std.parallelism;
 
-import kdtree, pairhist;
+import kdtree, pairhist, points;
 
 
 // This is a helper function for parallel accumulates
@@ -131,7 +131,6 @@ class PairCounter(P, ulong Dim, HT)
 // of paircounting on the sphere
 unittest {
 	import std.math, std.stdio;
-	import points;
 
 	Sphere2D[] parr = new Sphere2D[360];
 	foreach (i,ref parr1; parr) {

@@ -1,6 +1,29 @@
 module points;
 
-import std.math, kdtree;
+import std.math, std.traits;
+
+// Template constraints for points 
+template isPoint(P, ulong Dim) {
+	const isPoint = hasMember!(P, "x") &&
+		(P().x.length == Dim);
+}
+
+template hasDist(P) {
+	const hasDist = __traits(compiles, 
+			(P p1, P p2) {
+				double r = p1.dist(p2);
+			});
+}
+
+
+unittest {
+	struct Point {
+		float[3] x;
+	}
+	assert(isPoint!(Point, 3), "Point is a 3D point");
+	assert(!isPoint!(Point, 2), "Point is not a 2D point");
+}
+
 
 struct CartesianPointNd(ulong Dim) {
 	alias typeof(this) MyType;
@@ -14,6 +37,9 @@ struct CartesianPointNd(ulong Dim) {
 		return sqrt(r);
 	}
 }
+
+alias CartesianPointNd!2 Point2D;
+alias CartesianPointNd!3 Point3D;
 
 unittest {
 	assert(isPoint!(CartesianPointNd!3,3));

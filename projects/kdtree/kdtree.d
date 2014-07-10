@@ -1,28 +1,7 @@
 module kdtree;
 
-import std.algorithm, std.traits, std.math, std.array, std.typecons;
-
-// Template constraints for points 
-template isPoint(P, ulong Dim) {
-	const isPoint = hasMember!(P, "x") &&
-		(P().x.length == Dim);
-}
-
-template hasDist(P) {
-	const hasDist = __traits(compiles, 
-			(P p1, P p2) {
-				double r = p1.dist(p2);
-			});
-}
-
-
-unittest {
-	struct Point {
-		float[3] x;
-	}
-	assert(isPoint!(Point, 3), "Point is a 3D point");
-	assert(!isPoint!(Point, 2), "Point is not a 2D point");
-}
+import std.algorithm, std.math, std.array, std.typecons;
+import points;
 
 
 void splitOn(P, ulong Dim) (P[] points, ulong idim) 
