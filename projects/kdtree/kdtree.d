@@ -269,22 +269,26 @@ unittest {
 	assert(nel==parr.length); 
 }
 
-struct DualTreeWalk(P, ulong Dim)
-	if (isPoint!(P, Dim) && hasDist!P)
+struct DualTreeWalk(P, ulong Dim, E1=P, E2=E1)
+	if (isPoint!(P, Dim) && hasDist!P 
+			&& isPoint!(E1,Dim) && isPoint!(E2,Dim)
+			&& isImplicitlyConvertible!(E1,P) && isImplicitlyConvertible!(E2,P))
 {
-	alias KDNode!(P, Dim) MyNode;
+	alias KDNode!(P, Dim, E1) MyNode1;
+	alias KDNode!(P, Dim, E2) MyNode2;
 	alias typeof(this) MyWalk;
-	MyNode a, b;
+	MyNode1 a;
+	MyNode2 b;
 	double slo=double.max, shi=-double.max;
 
-	this (MyNode a, MyNode b, double slo, double shi) {
+	this (MyNode1 a, MyNode2 b, double slo, double shi) {
 		this.a = a;
 		this.b = b;
 		this.slo = slo; 
 		this.shi = shi;
 	} 
 
-	int opApply(int delegate(MyNode a, MyNode b) dg) {
+	int opApply(int delegate(MyNode1 a, MyNode2 b) dg) {
 		auto res = a.vp.minmaxDist(b.vp);
 
 		// Prune
@@ -336,5 +340,51 @@ unittest {
 
 	foreach(a,b; DualTreeWalk!(Point2D,2)(root,root,0,0.5)) {
 		assert(a is b);
+	}
+}
+
+
+unittest {
+	import std.random;
+	// NOTE : "subtype" of Point3D
+	struct Pt {
+		Point2D p;
+		double tmp;
+		alias p this;
+		this(float[2] x) {p.x = x;}
+	}
+	auto parr = [Pt([1,1]), Pt([1,-1]), Pt([-1,-1]), Pt([-1,1])];
+	auto root = new KDNode!(Point2D, 2, Pt)(parr,0,1);
+
+	foreach(a,b; DualTreeWalk!(Point2D,2, Pt)(root,root,0,0.5)) {
+		assert(a is b);
+	}
+}
+
+unittest {
+	import std.random;
+	// NOTE : "subtype" of Point3D
+	struct Pt {
+		Point2D p;
+		double tmp;
+		alias p this;
+		this(float[2] x) {p.x = x;}
+	}
+	struct Qt {
+		Point2D p;
+		int tmp;
+		alias p this;
+		this(float[2] x) {p.x = x;}
+	}
+	auto parr = [Pt([1,1]), Pt([1,-1]), Pt([-1,-1]), Pt([-1,1])];
+	auto qarr = [Qt([1,1]), Qt([1,-1]), Qt([-1,-1]), Qt([-1,1])];
+	auto root = new KDNode!(Point2D, 2, Pt)(parr,0,1);
+	auto soot = new KDNode!(Point2D, 2, Qt)(qarr,0,1);
+
+	foreach(a,b; DualTreeWalk!(Point2D,2, Pt,Qt)(root,soot,0,0.5)) {
+		assert(a.arr.length==a.arr.length);
+		assert(a.arr.length==1);
+		assert(a.arr[0].x[0]==b.arr[0].x[0]);
+		assert(a.arr[0].x[1]==b.arr[0].x[1]);
 	}
 }
