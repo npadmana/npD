@@ -129,14 +129,15 @@ unittest {
 	assert(res[1]==2,"max dist fails");
 }
 
-class KDNode(P, ulong Dim) 
-	if (isPoint!(P, Dim) && hasDist!P) 
+class KDNode(P, ulong Dim, Elt=P) 
+	if (isPoint!(P, Dim) && hasDist!P && isPoint!(Elt,Dim) && isImplicitlyConvertible!(Elt,P)) 
 {
+	alias typeof(this) MyType;
 	uint id;
-	P[] arr;
+	Elt[] arr;
 	VantagePoint!(P, Dim) vp;
 
-	this(P)(P[] points, double minSize=0, uint minPart=1, uint id=0, bool buildTree=true) 
+	this(Elt[] points, double minSize=0, uint minPart=1, uint id=0, bool buildTree=true) 
 	{
 		auto nel = points.length;
 		if (nel==0) throw new Exception("Cannot build around zero element array");
@@ -151,7 +152,7 @@ class KDNode(P, ulong Dim)
 		if (vp.rdist < minSize) return;
 
 		// Subdivide the tree
-		splitOn!(P,Dim)(arr, vp.maxdir);
+		splitOn!(Elt,Dim)(arr, vp.maxdir);
 		auto pos = nel/2;
 		_left = new KDNode(arr[0..pos], minSize, minPart, 2*id+1, true);
 		_right = new KDNode(arr[pos..$], minSize, minPart, 2*id+2, true);
@@ -162,16 +163,16 @@ class KDNode(P, ulong Dim)
 		return (left is null) && (right is null);
 	}
 
-	@property KDNode left() {
+	@property MyType left() {
 		return _left;
 	}
 
-	@property KDNode right() {
+	@property MyType right() {
 		return _right;
 	}
 
 	// opApply -- directly from TDPL ("Overloading foreach")
-	int opApply(int delegate(KDNode!(P,Dim) node) dg) {
+	int opApply(int delegate(MyType node) dg) {
 		auto result = dg(this);
 		if (result) return result;
 		if (_left) {
@@ -185,7 +186,7 @@ class KDNode(P, ulong Dim)
 		return 0;
 	}
 
-	private KDNode _left, _right;
+	private MyType _left, _right;
 
 }
 
@@ -215,6 +216,44 @@ unittest {
 	assert(root.arr is parr1);
 	assert(isSorted!("a.x[1] < b.x[1]")(parr1));
 }
+
+// Using "subtypes"
+unittest {
+	import std.random;
+	// NOTE : "subtype" of Point3D
+	struct Pt {
+		Point3D p;
+		double tmp;
+		alias p this;
+		this(float[3] x) {p.x = x;}
+	}
+	auto parr1 = [Pt([0,0,0]), Pt([1,0,0]), Pt([-1,0,0]), Pt([-2,0,0])];
+	assert(!isSorted!("a.x[0] < b.x[0]")(parr1));
+	// NOTE : Using subtype
+	auto root = new KDNode!(Point3D,3,Pt)(parr1,0,2);	
+	// Ensure that the array was not copied
+	assert(root.arr is parr1);
+	assert(root.id == 0);
+	assert(root.vp.maxdir == 0);
+	assert(!root.isLeaf);
+	assert(root.left.isLeaf);
+	assert(root.left.id == 1);
+	assert(root.right.isLeaf);
+	assert(root.right.id == 2);
+	assert(root.left.arr.length == 2);
+	assert(root.right.arr.length == 2);
+	assert(isSorted!("a.x[0] < b.x[0]")(parr1));
+	parr1 = new Pt[3561];
+	foreach (ref p1; parr1) {
+		p1.x[0] = 0; p1.x[2] = 0;
+		p1.x[1] = uniform(0.0,100.0);
+	}
+	// NOTE : Using subtype
+	root = new KDNode!(Point3D,3,Pt)(parr1,0,1);
+	assert(root.arr is parr1);
+	assert(isSorted!("a.x[1] < b.x[1]")(parr1));
+}
+
 
 unittest {
 	import std.random, std.range;
