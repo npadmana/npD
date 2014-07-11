@@ -1,6 +1,6 @@
 module kdtree;
 
-import std.algorithm, std.math, std.array, std.typecons;
+import std.algorithm, std.math, std.array, std.typecons, std.traits;
 import points;
 
 
@@ -37,8 +37,8 @@ struct VantagePoint(P, ulong Dim)
 	alias typeof(vp.x) CoordType;
 	alias typeof(this) MyType;
 
-	this(P)(P[] Points) 
-		if (isPoint!(P, Dim)) 
+	this(Elt)(Elt[] Points) 
+		if (isImplicitlyConvertible!(Elt,P))
 	{
 		// Choose the vantage point, just choose the central point in the box
 		CoordType xmin, xmax;
@@ -99,9 +99,24 @@ unittest {
 	assert(v2.maxdir==0);
 }
 
+// Test different array type
+unittest {
+	// Pt is implicitly convertible to Point2D. The VP is built with that type.
+	struct Pt {
+		Point2D p;
+		double tmp;
+		alias p this;
+		this(float[2] x) {p.x=x;}
+	}
+	auto p1 = [Pt([1,1]), Pt([-1,-1])];
+	auto v1 = VantagePoint!(Point2D,2)(p1);
+	assert(v1.vp.x[0]==0);
+	assert(v1.vp.x[1]==0);
+	assert(approxEqual(v1.rdist,sqrt(2.0)));
+}
+
 
 unittest {
-	
 	auto p1 = [Point2D([1,0]), Point2D([-1,0])];
 	auto v1 = VantagePoint!(Point2D,2)(p1);
 	auto p2 = [Point2D([10,0]), Point2D([8,0])];
