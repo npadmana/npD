@@ -286,3 +286,38 @@ unittest {
 	assert(pp.hist[1]==720);
 	assert(pp.hist[2]==720);
 }
+
+// Test using specified bin boundaries
+unittest {
+	import std.math, std.stdio;
+
+	Sphere2D[] parr = new Sphere2D[360];
+	foreach (i,ref parr1; parr) {
+		parr1 = Sphere2D(i, 0, true, true);
+	}
+
+	class AngularPairCounter : PairCounter!(Sphere2D, 2,Histogram) {
+
+		// First setup the histogram
+		this(double[] bins) {
+			hist = new Histogram(bins);
+			rmin = bins[0]; rmax = bins[$-1];
+		}
+
+		override void accumulate(Histogram h1, Sphere2D[] arr1, Sphere2D[] arr2, double scale=1) {
+			double r;
+			foreach (x1; arr1) {
+				foreach (x2; arr2) {
+					r = x1.dist(x2)*180*M_1_PI;
+					h1.accumulate(r);
+				}
+			}
+		}
+	}
+
+	auto pp = new AngularPairCounter([0.0,0.75,1.5,2.3]);
+	pp.accumulate(pp.hist, parr, parr);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
+}

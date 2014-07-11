@@ -18,6 +18,13 @@ class Histogram2D {
 		this.ny = ny;
 	}
 
+	this(double[] xbins, double[] ybins) {
+		this.nx = xbins.length-1;
+		this.ny = ybins.length-1;
+		hist = gsl_histogram2d_alloc(this.nx, this.ny);
+		gsl_histogram2d_set_ranges(hist, &xbins[0], this.nx+1, &ybins[0],this.ny+1);
+	}
+
 	this(Histogram2D h1, bool reset=true) {
 		hist = gsl_histogram2d_clone(h1.hist);
 		if (reset) gsl_histogram2d_reset(hist);
@@ -125,7 +132,7 @@ class Histogram2D {
 
 	//private double[] hist;
 	private gsl_histogram2d* hist; 
-	private int nx, ny; 
+	private ulong nx, ny; 
 
 
 }
@@ -136,6 +143,12 @@ class Histogram {
 		hist = gsl_histogram_alloc(nx);
 		gsl_histogram_set_ranges_uniform(hist, xmin, xmax);
 		this.nx = nx;
+	}
+
+	this(double[] bins) {
+		this.nx=bins.length-1;
+		hist = gsl_histogram_alloc(this.nx);
+		gsl_histogram_set_ranges(hist, &bins[0], this.nx+1);
 	}
 
 	this(Histogram h1, bool reset=true) {
@@ -239,7 +252,7 @@ class Histogram {
 
 	//private double[] hist;
 	private gsl_histogram* hist; 
-	private int nx;
+	private ulong nx;
 
 
 }
