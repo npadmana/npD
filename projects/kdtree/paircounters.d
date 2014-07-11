@@ -220,3 +220,69 @@ unittest {
 	assert(pp.hist[2]==720);
 }
 
+unittest {
+	import std.math, std.stdio;
+
+	struct Pt {
+		Sphere2D p;
+		int i;
+		alias p this;
+	}
+	struct Qt {
+		Sphere2D p;
+		int[3] ii;
+		alias p this;
+	}
+	auto parr = new Pt[360];
+	auto qarr = new Qt[360];
+	foreach (i,ref parr1; parr) {
+		parr1 = Pt(Sphere2D(i, 0, true, true));
+		qarr[i] = Qt(Sphere2D(i,0,true,true));
+	}
+
+	class AngularPairCounter : PairCounter!(Sphere2D, 2,Histogram,Pt,Qt) {
+
+		// First setup the histogram
+		this(double thetamax, int nbins) {
+			hist = new Histogram(nbins, 0, thetamax);
+			rmin = 0.0; rmax = thetamax;
+		}
+
+		override void accumulate(Histogram h1, Pt[] arr1, Qt[] arr2, double scale=1) {
+			double r;
+			foreach (x1; arr1) {
+				foreach (x2; arr2) {
+					r = x1.dist(x2)*180*M_1_PI;
+					h1.accumulate(r);
+				}
+			}
+		}
+	}
+
+	auto pp = new AngularPairCounter(3,4);
+	pp.whoami();
+	pp.accumulate(pp.hist, parr, qarr);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
+
+	auto root = new KDNode!(Sphere2D,2,Pt)(parr);
+	auto soot = new KDNode!(Sphere2D,2,Qt)(qarr);
+	pp = new AngularPairCounter(3,4);
+	pp.accumulateTree(root, soot);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
+	
+	pp = new AngularPairCounter(3,4);
+	pp.accumulateTreeParallel(root, soot,10);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
+
+	pp = new AngularPairCounter(3,4);
+	pp.accumulateTreeParallel(root, soot,10,1);
+	assert(pp.hist[0]==360);
+	assert(pp.hist[1]==720);
+	assert(pp.hist[2]==720);
+}
