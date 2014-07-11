@@ -1,8 +1,16 @@
 module gsl.bindings.histogram;
 
-// Opaque structures for now
-alias struct gsl_histogram;
-alias struct gsl_histogram_pdf;
+// GSL Histogram structures
+extern(C) struct gsl_histogram {
+	size_t n;
+	double* range;
+	double* bin;
+};
+extern(C) struct gsl_histogram_pdf {
+	size_t n;
+	double* range;
+	double* sum;
+};
 
 // external C declarations
 extern(C) {
