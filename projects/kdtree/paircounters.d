@@ -1,6 +1,6 @@
 module paircounters;
 
-import std.parallelism;
+import std.parallelism, std.traits;
 
 import kdtree, pairhist, points;
 
@@ -21,7 +21,7 @@ import kdtree, pairhist, points;
 //
 // IMPORTANT NOTE : The taskpool sometimes runs jobs in the main thread with index=0. So store
 //  should be an array with nworkers+1 where 0 will be used by the main thread. 
-void parallelAccHelper(T, H, P)(T pair, TaskPool pool, H store, P[] arr1, P[] arr2, double scale) {
+void parallelAccHelper(T, H, E1, E2)(T pair, TaskPool pool, H store, E1[] arr1, E2[] arr2, double scale) {
 	auto me = pool.workerIndex;
 	pair.accumulate(store[me],arr1,arr2,scale);
 }
@@ -31,15 +31,19 @@ void parallelAccHelper(T, H, P)(T pair, TaskPool pool, H store, P[] arr1, P[] ar
 //*******************************
 
 // HT his a histogram type
-class PairCounter(P, ulong Dim, HT) 
-	if (isPoint!(P, Dim) && hasDist!P)
+// E1, E2 are optional types for the arrays
+class PairCounter(P, ulong Dim, HT, E1=P, E2=E1) 
+	if (isPoint!(P, Dim) && hasDist!P
+			&& isPoint!(E1,Dim) && isPoint!(E2,Dim)
+			&& isImplicitlyConvertible!(E1,P) && isImplicitlyConvertible!(E2,P))
 {
-	alias KDNode!(P, Dim) KD;
-	alias DualTreeWalk!(P, Dim) DT;
+	alias KDNode!(P, Dim,E1) KD1;
+	alias KDNode!(P, Dim,E2) KD2;
+	alias DualTreeWalk!(P, Dim,E1,E2) DT;
 
-	abstract void accumulate(HT h1, P[] arr1, P[] arr2, double scale=1);
+	abstract void accumulate(HT h1, E1[] arr1, E2[] arr2, double scale=1);
 
-	void accumulateTree(KD a, KD b) {
+	void accumulateTree(KD1 a, KD2 b) {
 		auto isauto = a is b;
 		double scale;
 		auto walker = DT(a,b,rmin,rmax);
@@ -54,7 +58,7 @@ class PairCounter(P, ulong Dim, HT)
 		}
 	}
 
-	void accumulateTreeParallel(KD a, KD b, int nworkers) {
+	void accumulateTreeParallel(KD1 a, KD2 b, int nworkers) {
 		// Allocate auxiliary storage
 		auto store = new HT[nworkers+1];
 		foreach (ref h1; store) {
@@ -77,7 +81,7 @@ class PairCounter(P, ulong Dim, HT)
 			} else {
 				scale = 1.0;
 			}
-			auto t = task!(parallelAccHelper!(typeof(this),typeof(store),P))(this,pool, store, a1.arr, b1.arr, scale);
+			auto t = task!(parallelAccHelper!(typeof(this),typeof(store),E1,E2))(this,pool, store, a1.arr, b1.arr, scale);
 			pool.put(t);
 		}
 
@@ -89,7 +93,7 @@ class PairCounter(P, ulong Dim, HT)
 		}
 	}
 
-	void accumulateTreeParallel(KD a, KD b, int nworkers, double scale) {
+	void accumulateTreeParallel(KD1 a, KD2 b, int nworkers, double scale) {
 		// Allocate auxiliary storage
 		auto store = new HT[nworkers+1];
 		foreach (ref h1; store) {
@@ -101,7 +105,7 @@ class PairCounter(P, ulong Dim, HT)
 
 		auto walker = DT(a,b,rmin,rmax);
 		foreach(a1, b1; walker) {
-			auto t = task!(parallelAccHelper!(typeof(this),typeof(store),P))(this,pool, store, a1.arr, b1.arr, scale);
+			auto t = task!(parallelAccHelper!(typeof(this),typeof(store),E1,E2))(this,pool, store, a1.arr, b1.arr, scale);
 			pool.put(t);
 		}
 
