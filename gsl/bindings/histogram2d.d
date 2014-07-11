@@ -76,8 +76,8 @@ gsl_histogram2d_set_ranges_uniform (gsl_histogram2d * h,
 
 int 
 gsl_histogram2d_set_ranges (gsl_histogram2d * h, 
-                            const double xrange[], size_t xsize,
-                            const double yrange[], size_t ysize);
+                            const double* xrange, size_t xsize,
+                            const double* yrange, size_t ysize);
 
 int 
 gsl_histogram2d_memcpy(gsl_histogram2d *dest, const gsl_histogram2d *source);
