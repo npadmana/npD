@@ -48,8 +48,8 @@ class PairCounter(P, ulong Dim, HT, E1=P, E2=E1)
 		double scale;
 		auto walker = DT(a,b,rmin,rmax);
 		foreach (a1,b1; walker) {
-			if (isauto && (a.id > b.id)) continue;
-			if (isauto && (a.id < b.id)) {
+			if (isauto && (a1.id > b1.id)) continue;
+			if (isauto && (a1.id < b1.id)) {
 				scale=2.0;
 			} else {
 				scale=1.0;
@@ -75,8 +75,8 @@ class PairCounter(P, ulong Dim, HT, E1=P, E2=E1)
 			// NOTE : This optimization is why we have two versions of this function, one
 			// with a fixed scale and one without. 
 			// DO NOT MERGE THESE ROUTINES WITHOUT CAREFULLY THINKING.
-			if (isauto && (a.id > b.id)) continue;  
-			if (isauto && (a.id < b.id)) {
+			if (isauto && (a1.id > b1.id)) continue;  
+			if (isauto && (a1.id < b1.id)) {
 				scale = 2.0;
 			} else {
 				scale = 1.0;
@@ -154,7 +154,7 @@ unittest {
 			foreach (x1; arr1) {
 				foreach (x2; arr2) {
 					r = x1.dist(x2)*180*M_1_PI;
-					h1.accumulate(r);
+					h1.accumulate(r,scale);
 				}
 			}
 		}
@@ -253,7 +253,7 @@ unittest {
 			foreach (x1; arr1) {
 				foreach (x2; arr2) {
 					r = x1.dist(x2)*180*M_1_PI;
-					h1.accumulate(r);
+					h1.accumulate(r,scale);
 				}
 			}
 		}
@@ -309,7 +309,7 @@ unittest {
 			foreach (x1; arr1) {
 				foreach (x2; arr2) {
 					r = x1.dist(x2)*180*M_1_PI;
-					h1.accumulate(r);
+					h1.accumulate(r,scale);
 				}
 			}
 		}
