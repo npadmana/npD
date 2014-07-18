@@ -75,7 +75,7 @@ gsl_interp_alloc(const gsl_interp_type * T, size_t n);
 int
 gsl_interp_init(gsl_interp * obj, const double* xa, const double* ya, size_t size);
 
-const char * gsl_interp_name(const gsl_interp * interp);
+const (char *) gsl_interp_name(const gsl_interp * interp);
 uint gsl_interp_min_size(const gsl_interp * interp);
 uint gsl_interp_type_min_size(const gsl_interp_type * T);
 
@@ -143,7 +143,7 @@ gsl_spline_alloc(const gsl_interp_type * T, size_t size);
 int
 gsl_spline_init(gsl_spline * spline, const double* xa, const double* ya, size_t size);
 
-const char * gsl_spline_name(const gsl_spline * spline);
+const(char *) gsl_spline_name(const gsl_spline * spline);
 uint gsl_spline_min_size(const gsl_spline * spline);
 
 

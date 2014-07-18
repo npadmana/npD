@@ -113,7 +113,7 @@ void gsl_rng_free (gsl_rng * r);
 void gsl_rng_set (const gsl_rng * r, ulong seed);
 ulong gsl_rng_max (const gsl_rng * r);
 ulong gsl_rng_min (const gsl_rng * r);
-const char *gsl_rng_name (const gsl_rng * r);
+const(char *)gsl_rng_name (const gsl_rng * r);
 
 //int gsl_rng_fread (FILE * stream, gsl_rng * r);
 //int gsl_rng_fwrite (FILE * stream, const gsl_rng * r);
@@ -123,7 +123,7 @@ void * gsl_rng_state (const gsl_rng * r);
 
 void gsl_rng_print_state (const gsl_rng * r);
 
-const gsl_rng_type * gsl_rng_env_setup ();
+const (gsl_rng_type *) gsl_rng_env_setup ();
 
 ulong gsl_rng_get (const gsl_rng * r);
 double gsl_rng_uniform (const gsl_rng * r);
