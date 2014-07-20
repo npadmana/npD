@@ -206,8 +206,8 @@ const char[] treeAccumulateX=r"
 		double scale;
 		auto walker = DualTreeWalk!(dist,P)(a, b, 0, smax*1.01);
 		foreach(a1, b1; walker) {
-			if (isauto && (a.id > b.id)) continue;
-			if (isauto && (a.id < b.id)) {
+			if (isauto && (a1.id > b1.id)) continue;
+			if (isauto && (a1.id < b1.id)) {
 				scale = 2.0;
 			} else {
 				scale = 1.0;
@@ -228,8 +228,8 @@ const char[] accumulateParallelX_autoscale=r"
 			// NOTE : This optimization is why we have two versions of this function, one
 			// with a fixed scale and one without. 
 			// DO NOT MERGE THESE ROUTINES WITHOUT CAREFULLY THINKING.
-			if (isauto && (a.id > b.id)) continue;  
-			if (isauto && (a.id < b.id)) {
+			if (isauto && (a1.id > b1.id)) continue;  
+			if (isauto && (a1.id < b1.id)) {
 				scale = 2.0;
 			} else {
 				scale = 1.0;
