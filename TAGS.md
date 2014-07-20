@@ -3,6 +3,10 @@ we can keep track of which versions we need. Not all changes need to
 be put in here, but changes to code functionality (especially which 
 might break existing code) should be documented here.
 
+* Update DualTreeWalker - the original version segfaulted when run with DMD 2.065
+	the latest version does the iteration as a function, with a thin structure wrapper.
+* Update GSL bindings to fix const char* bug that escaped older version of DMD
+
 v0.4.0
 ------
 * Merge in kdtree branch
