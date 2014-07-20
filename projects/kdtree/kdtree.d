@@ -289,47 +289,52 @@ struct DualTreeWalk(P, ulong Dim, E1=P, E2=E1)
 	} 
 
 	int opApply(int delegate(MyNode1 a, MyNode2 b) dg) {
-		auto res = a.vp.minmaxDist(b.vp);
 
-		// Prune
-		if (res[0] >= shi) return 0;
-		if (res[1] < slo) return 0;
+		// Define an internal helper function 
+		int dualTreeWalker(MyNode1 a, MyNode2 b) {
+			auto res = a.vp.minmaxDist(b.vp);
 
-		// If the node if completely contained, open and proceed
-		if ((slo <= res[0]) && (res[1] < shi)) return dg(a,b);
+			// Prune
+			if (res[0] >= shi) return 0;
+			if (res[1] < slo) return 0;
 
-		// If nodes are both leaves
-		if (a.isLeaf && b.isLeaf) return dg(a,b);
+			// If the node if completely contained, open and proceed
+			if ((slo <= res[0]) && (res[1] < shi)) return dg(a,b);
 
-		// If one is a leaf
-		if (a.isLeaf) {
-			auto retval = MyWalk(a, b.left, slo, shi).opApply(dg);
-			if (retval) return retval;
-			retval = MyWalk(a, b.right, slo, shi).opApply(dg);
-			return retval;
+			// If nodes are both leaves
+			if (a.isLeaf && b.isLeaf) return dg(a,b);
+
+			// If one is a leaf
+			if (a.isLeaf) {
+				auto retval = dualTreeWalker(a, b.left);
+				if (retval) return retval;
+				retval = dualTreeWalker(a, b.right);
+				return retval;
+			}
+
+			if (b.isLeaf) {
+				auto retval = dualTreeWalker(a.left, b);
+				if (retval) return retval;
+				retval = dualTreeWalker(a.right, b);
+				return retval;
+			}
+
+			// If neither are leaves, pick the bigger one to split
+			if (a.arr.length > b.arr.length) {
+				auto retval = dualTreeWalker(a.left, b);
+				if (retval) return retval;
+				retval = dualTreeWalker(a.right, b);
+				return retval;
+			} else {
+				auto retval = dualTreeWalker(a,b.left);
+				if (retval) return retval;
+				retval = dualTreeWalker(a,b.right);
+				return retval;
+			}
+
+			return 0;
 		}
-
-		if (b.isLeaf) {
-			auto retval = MyWalk(a.left, b, slo, shi).opApply(dg);
-			if (retval) return retval;
-			retval = MyWalk(a.right, b, slo, shi).opApply(dg);
-			return retval;
-		}
-
-		// If neither are leaves, pick the bigger one to split
-		if (a.arr.length > b.arr.length) {
-			auto retval = MyWalk(a.left, b, slo, shi).opApply(dg);
-			if (retval) return retval;
-			retval = MyWalk(a.right, b, slo, shi).opApply(dg);
-			return retval;
-		} else {
-			auto retval = MyWalk(a, b.left, slo, shi).opApply(dg);
-			if (retval) return retval;
-			retval = MyWalk(a, b.right, slo, shi).opApply(dg);
-			return retval;
-		}
-
-		return 0;
+		return dualTreeWalker(a,b);
 	}
 }
 
