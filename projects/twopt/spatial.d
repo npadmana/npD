@@ -253,6 +253,7 @@ class KDNode(P) if (isPoint!P) {
 	uint id;
 	P[] arr;
 	BoundingBox box;
+	alias typeof(this) MyType;
 
 	this(P)(P[] points, double minLength=0, uint minPart=1, uint id=0, bool buildTree=true) 
 	{
@@ -280,11 +281,11 @@ class KDNode(P) if (isPoint!P) {
 		return (left is null) && (right is null);
 	}
 
-	@property KDNode left() {
+	@property MyType  left() {
 		return _left;
 	}
 
-	@property KDNode right() {
+	@property MyType right() {
 		return _right;
 	}
 
@@ -351,63 +352,72 @@ unittest {
 	assert(nel==parr.length); 
 }
 
+int dualTreeWalker(alias dist, P)(KDNode!P a, KDNode!P b, double slo, double shi, 
+		int delegate(ref KDNode!P, ref KDNode!P) dg) {
+	auto res = dist(a.box,b.box);
+
+	// Prune
+	if (res[0] >= shi) return 0;
+	if (res[1] < slo) return 0;
+
+	// If the node if completely contained, open and proceed
+	if ((slo <= res[0]) && (res[1] < shi)) return dg(a,b);
+
+	// If nodes are both leaves
+	if (a.isLeaf && b.isLeaf) return dg(a,b);
+
+	// If one is a leaf
+	if (a.isLeaf) {
+		auto retval = dualTreeWalker!(dist,P)(a, b.left, slo, shi,dg);
+		if (retval) return retval;
+		retval = dualTreeWalker!(dist,P)(a, b.right, slo, shi,dg);
+		return retval;
+	}
+
+	if (b.isLeaf) {
+		auto retval = dualTreeWalker!(dist,P)(a.left, b, slo, shi,dg);
+		if (retval) return retval;
+		retval = dualTreeWalker!(dist,P)(a.right, b, slo, shi,dg);
+		return retval;
+	}
+
+	// If neither are leaves, pick the bigger one to split
+	if (a.arr.length > b.arr.length) {
+		auto retval = dualTreeWalker!(dist,P)(a.left, b, slo, shi,dg);
+		if (retval) return retval;
+		retval = dualTreeWalker!(dist,P)(a.right, b, slo, shi,dg);
+		return retval;
+	} else {
+		auto retval = dualTreeWalker!(dist,P)(a, b.left, slo, shi,dg);
+		if (retval) return retval;
+		retval = dualTreeWalker!(dist,P)(a, b.right, slo, shi,dg);
+		return retval;
+	}
+
+	return 0;
+}
 
 
+
+// This is just a thin wrapper to enable the dualTreeWalker to be called
+// within foreach.
+// This change appears to be necessary for DMD 2.065, which would otherwise
+// segfault when compiled optimized.
 struct DualTreeWalk(alias dist, P)
 	if (isBoundingBoxDist!dist) 
 {
 	KDNode!P a, b;
 	double slo=double.max, shi=-double.max;
 
-	this(P) (KDNode!P a, KDNode!P b, double slo, double shi) {
+	this(KDNode!P a, KDNode!P b, double slo, double shi) {
 		this.a = a;
 		this.b = b;
 		this.slo = slo; 
 		this.shi = shi;
 	} 
 
-	int opApply(int delegate(KDNode!P a, KDNode!P b) dg) {
-		auto res = dist(a.box,b.box);
-
-		// Prune
-		if (res[0] >= shi) return 0;
-		if (res[1] < slo) return 0;
-
-		// If the node if completely contained, open and proceed
-		if ((slo <= res[0]) && (res[1] < shi)) return dg(a,b);
-
-		// If nodes are both leaves
-		if (a.isLeaf && b.isLeaf) return dg(a,b);
-
-		// If one is a leaf
-		if (a.isLeaf) {
-			auto retval = DualTreeWalk!(dist,P)(a, b.left, slo, shi).opApply(dg);
-			if (retval) return retval;
-			retval = DualTreeWalk!(dist,P)(a, b.right, slo, shi).opApply(dg);
-			return retval;
-		}
-
-		if (b.isLeaf) {
-			auto retval = DualTreeWalk!(dist,P)(a.left, b, slo, shi).opApply(dg);
-			if (retval) return retval;
-			retval = DualTreeWalk!(dist,P)(a.right, b, slo, shi).opApply(dg);
-			return retval;
-		}
-
-		// If neither are leaves, pick the bigger one to split
-		if (a.arr.length > b.arr.length) {
-			auto retval = DualTreeWalk!(dist,P)(a.left, b, slo, shi).opApply(dg);
-			if (retval) return retval;
-			retval = DualTreeWalk!(dist,P)(a.right, b, slo, shi).opApply(dg);
-			return retval;
-		} else {
-			auto retval = DualTreeWalk!(dist,P)(a, b.left, slo, shi).opApply(dg);
-			if (retval) return retval;
-			retval = DualTreeWalk!(dist,P)(a, b.right, slo, shi).opApply(dg);
-			return retval;
-		}
-
-		return 0;
+	int opApply(int delegate(ref KDNode!P, ref KDNode!P) dg) {
+		return dualTreeWalker!(dist,P)(a,b,slo,shi,dg);
 	}
 }
 
