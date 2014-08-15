@@ -302,5 +302,13 @@ class HistArr(HT, ulong Nhist) {
 	void reset() {
 		foreach (ref h1; hists) h1.reset();
 	}
+
+	// MPI reduce
+	version(MPI) {
+		void mpiReduce(int root, MPI_Comm comm) {
+			foreach (ref h1; hists) h1.mpiReduce(root, comm);
+		}
+	}
+
 	
 }
