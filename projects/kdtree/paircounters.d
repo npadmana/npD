@@ -321,3 +321,50 @@ unittest {
 	assert(pp.hist[1]==720);
 	assert(pp.hist[2]==720);
 }
+
+// Test the histogram array functionality
+unittest {
+	import std.math, std.stdio;
+
+	Sphere2D[] parr = new Sphere2D[360];
+	foreach (i,ref parr1; parr) {
+		parr1 = Sphere2D(i, 0, true, true);
+	}
+
+	// Define the histogram array type we will use
+	alias HistArr!(Histogram, 2) MyHist;
+
+	class AngularPairCounter : PairCounter!(Sphere2D, 2, MyHist) {
+
+		// First setup the histogram
+		this(double thetamax, int nbins) {
+			hist = new MyHist(nbins, 0, thetamax);
+			rmin = 0.0; rmax = thetamax;
+		}
+
+		override void accumulate(MyHist h1, Sphere2D[] arr1, Sphere2D[] arr2, double scale=1) {
+			double r;
+			foreach (x1; arr1) {
+				foreach (x2; arr2) {
+					r = x1.dist(x2)*180*M_1_PI;
+					h1[0].accumulate(r,scale);
+					h1[1].accumulate(r,scale);
+				}
+			}
+		}
+	}
+
+	auto root = new KDNode!(Sphere2D,2)(parr);
+	auto pp = new AngularPairCounter(3,4);
+	pp.accumulateTreeParallel(root, root,10);
+	assert(pp.hist[0][0]==360);
+	assert(pp.hist[0][1]==720);
+	assert(pp.hist[0][2]==720);
+	
+	assert(pp.hist[1][0]==360);
+	assert(pp.hist[1][1]==720);
+	assert(pp.hist[1][2]==720);
+
+}
+	
+

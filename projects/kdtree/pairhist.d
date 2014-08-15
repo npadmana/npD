@@ -256,3 +256,51 @@ class Histogram {
 
 
 }
+
+// Arrays of histograms --- useful if you want to simultaneously histogram
+// multiple quantities
+// This is a convenience wrapper around a public array of Histogram2D 
+// HT : type of histogram
+class HistArr(HT, ulong Nhist) {
+
+	alias typeof(this) MyType;
+	HT[Nhist] hists;
+	
+	this(T:MyType, U:bool) (T hin, U reset=true) {
+		foreach (ref h1; hists) {
+			h1 = new HT(hin[0], reset);
+		}
+	}
+
+	
+	this(T:MyType) (T hin) {
+		foreach (ref h1; hists) {
+			h1 = new HT(hin[0], true);
+		}
+	}
+
+	// Simple wrapper for all other constructors
+	this(T...) (T args) {
+		foreach (ref h1; hists) {
+			h1 = new HT(args);
+		}
+	}
+
+	// We do use this in the paircounting code
+	ref MyType opOpAssign(string op) (MyType rhs) if (op=="+") {
+		foreach (i, h1; hists) {
+			h1 += rhs[i];
+		}
+		return this;
+	} 
+
+	// Overload index
+	ref HT opIndex(ulong i) {
+		return hists[i];
+	}
+
+	void reset() {
+		foreach (ref h1; hists) h1.reset();
+	}
+	
+}
