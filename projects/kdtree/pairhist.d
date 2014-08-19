@@ -1,6 +1,6 @@
 module pairhist;
 
-import std.typecons;
+import std.typecons, std.conv;
 
 import gsl.histogram;
 
@@ -118,13 +118,13 @@ class Histogram2D {
 	version(MPI) {
 		void mpiReduce(int root, MPI_Comm comm) {
 			int rank;
-			rank = MPI_Comm_rank(comm, &rank);
+			MPI_Comm_rank(comm, &rank);
 			if (rank == root) {
 				auto arr = new double[nx*ny];
 				arr[] = hist.bin[0..nx*ny];
-				MPI_Reduce(cast(void*)&arr[0],cast(void*)hist.bin, nx*ny, MPI_DOUBLE, MPI_SUM, root, comm);
+				MPI_Reduce(cast(void*)&arr[0],cast(void*)hist.bin, to!int(nx*ny), MPI_DOUBLE, MPI_SUM, root, comm);
 			} else {
-				MPI_Reduce(cast(void*)hist.bin, null, nx*ny, MPI_DOUBLE, MPI_SUM, root, comm);
+				MPI_Reduce(cast(void*)hist.bin, null, to!int(nx*ny), MPI_DOUBLE, MPI_SUM, root, comm);
 			}
 		}
 	}
@@ -238,13 +238,13 @@ class Histogram {
 	version(MPI) {
 		void mpiReduce(int root, MPI_Comm comm) {
 			int rank;
-			rank = MPI_Comm_rank(comm, &rank);
+			MPI_Comm_rank(comm, &rank);
 			if (rank == root) {
 				auto arr = new double[nx];
 				arr[] = hist.bin[0..nx];
-				MPI_Reduce(cast(void*)&arr[0],cast(void*)hist.bin, nx, MPI_DOUBLE, MPI_SUM, root, comm);
+				MPI_Reduce(cast(void*)&arr[0],cast(void*)hist.bin, to!int(nx), MPI_DOUBLE, MPI_SUM, root, comm);
 			} else {
-				MPI_Reduce(cast(void*)hist.bin, null, nx, MPI_DOUBLE, MPI_SUM, root, comm);
+				MPI_Reduce(cast(void*)hist.bin, null, to!int(nx), MPI_DOUBLE, MPI_SUM, root, comm);
 			}
 		}
 	}
@@ -288,7 +288,7 @@ class HistArr(HT, ulong Nhist) {
 
 	// We do use this in the paircounting code
 	ref MyType opOpAssign(string op) (MyType rhs) if (op=="+") {
-		foreach (i, h1; hists) {
+		foreach (i, ref h1; hists) {
 			h1 += rhs[i];
 		}
 		return this;
