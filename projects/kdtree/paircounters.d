@@ -87,7 +87,7 @@ class PairCounter(P, ulong Dim, HT, E1=P, E2=E1)
 
 		pool.finish(true);
 
-		hist.reset();
+		// Note that we just continue to accumulate into the histogram
 		foreach (h1; store) {
 			hist += h1;
 		}
@@ -111,7 +111,7 @@ class PairCounter(P, ulong Dim, HT, E1=P, E2=E1)
 
 		pool.finish(true);
 
-		hist.reset();
+		// Note that we just continue to accumulate into the histogram
 		foreach (h1; store) {
 			hist += h1;
 		}
