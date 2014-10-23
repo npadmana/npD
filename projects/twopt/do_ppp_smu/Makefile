@@ -5,7 +5,7 @@ include ../../../make.vars
 INIFILES=${NPD_DIR}/projects/ini/inifile.d
 
 DFILES=../paircounters.d ../spatial.d ${INIFILES}
-SRCS=do_ppp_smu.d
+SRCS=do_ppp_smu.d do_ppp_smu_noweight.d
 EXECS=${SRCS:%.d=${BUILDDIR}/%.x}
 GSLLINK=-L${GSL_DIR}/lib -lgsl -lgslcblas 
 
