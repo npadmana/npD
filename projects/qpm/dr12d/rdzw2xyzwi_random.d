@@ -32,7 +32,7 @@ Particle[] read_rdzw(string fn, double zmin, double zmax, bool weight=false) {
 }
 
 // Designed to read in files produced by mksample
-auto read_fkp(string fn, double P0) {
+auto read_fkp(string fn) {
 	double[] zarr, fkp;
 	auto ff = File(fn);
 	foreach (line; ff.byLine) {
@@ -73,15 +73,14 @@ void main(string[] args) {
 	auto zmin = ini.get!double("zmin");
 	auto zmax = ini.get!double("zmax");
 	auto Om = ini.get!double("OmegaM");
-	auto P0 = ini.get!double("P0");
-	auto nzfn = ini.get!string("nzfn");
+	auto wfn = ini.get!string("wfn");
 
 
 	// Get the list of jobs
 	auto jobs = filter!(a => startsWith(a,"job"))(ini.keys).array;
 
 	// Read the weights
-	auto fkptup = read_fkp(nzfn, P0);
+	auto fkptup = read_fkp(wfn);
 
 
 	foreach (job1; parallel(jobs,1)) {
