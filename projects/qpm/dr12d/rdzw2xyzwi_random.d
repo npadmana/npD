@@ -23,7 +23,7 @@ Particle[] read_rdzw(string fn, double zmin, double zmax, bool weight=false) {
 		auto vals = line.split.map!(to!double).array;
 		p.ra = vals[0]; p.dec = vals[1]; p.zred = vals[2];
 		p.w = 1;
-		if (weight) p.w = vals[3];
+		if (weight) p.w = 1-vals[3];
 		if ((p.zred < zmin) || (p.zred >= zmax)) continue;
 		arr ~= p;
 	}
