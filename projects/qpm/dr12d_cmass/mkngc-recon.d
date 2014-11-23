@@ -8,7 +8,7 @@ void main() {
 #PBS -V
 
 cd $PBS_O_WORKDIR
-aprun -n 96 ../exec/recon_lasdamas_zspace_weighted -configfn reconfiles/ngc/ngc.%03d.xml -log_summary
+aprun -n 64 -N 16 -S 8 ../exec/recon_lasdamas_zspace_weighted -configfn reconfiles/ngc/ngc.%03d.xml -log_summary
 
 ";
 
