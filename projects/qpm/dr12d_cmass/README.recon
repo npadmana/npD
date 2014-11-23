@@ -1,0 +1,5 @@
+Get box sizes
+-------------
+
+rdmd ./reconbox.d ../randoms/a0.6452_rand20x.dr12d_cmass_ngc.xyzwi > ngc.bbox
+rdmd ./reconbox.d ../randoms/a0.6452_rand20x.dr12d_cmass_sgc.xyzwi > sgc.bbox
