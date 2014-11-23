@@ -3,3 +3,10 @@ Get box sizes
 
 rdmd ./reconbox.d ../randoms/a0.6452_rand20x.dr12d_cmass_ngc.xyzwi > ngc.bbox
 rdmd ./reconbox.d ../randoms/a0.6452_rand20x.dr12d_cmass_sgc.xyzwi > sgc.bbox
+
+Generate XML files
+------------------
+
+mk_unrecon_paircount <start> <end> <instr> <randstr> <outstr> <hdr> <outini> <inistart> <chunk>
+
+rdmd reconfiles/mk_recon_xml.d 1 10 ngc/a0.6452_%04d.dr12d_cmass_ngc.xyzwi randoms/a0.6452_rand20x.dr12d_cmass_ngc.xyzwi recon_ngc/a0.6452_%04d.dr12d_cmass_ngc reconfiles/recon-ngc.xml.hdr reconfiles/ngc/recon.%03d.xml 0 100

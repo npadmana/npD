@@ -29,11 +29,11 @@ struct FnStr {
   }
 
   @property string job(string randstr) {
-	  auto w = appender!string("<LDzspace\n");
+	  auto w = appender!string("<LDzspace>\n");
 	  formattedWrite(w, "<indata>%s</indata>\n",fn1);
 	  formattedWrite(w, "<outdata>%s.shift</outdata>\n",fn2);
 	  formattedWrite(w, "<inrand>%s</inrand>\n",randstr);
-	  formattedWrite(w, "<outrand>%s.shift</outrand>\n",fn2);
+	  formattedWrite(w, "<outrand>%s.rshift</outrand>\n",fn2);
 	  w ~= "</LDzspace>\n";
 	  return w.data();
   }
