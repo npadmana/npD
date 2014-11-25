@@ -20,3 +20,12 @@ rdmd reconfiles/mk_recon_xml.d 1 1000 ngc/a0.6452_%04d.dr12d_cmass_ngc.xyzwi ran
 
 #---SGC  case
 rdmd reconfiles/mk_recon_xml.d 1 1000 sgc/a0.6452_%04d.dr12d_cmass_sgc.xyzwi randoms/a0.6452_rand20x.dr12d_cmass_sgc.xyzwi recon_sgc/a0.6452_%04d.dr12d_cmass_sgc reconfiles/recon-sgc.xml.hdr reconfiles/sgc/sgc.%03d.xml 1 100
+
+
+Paircounts
+----------
+
+mk_recon_paircount <start> <end> <instr> <outstr> <hdr> <outini> <inistart> <chunksize>
+
+rdmd reconfiles/mk_recon_paircount.d 1 1000 recon_ngc/a0.6452_%04d.dr12d_cmass_ngc paircounts/recon_ngc/qpm-recon-%04d ini/paircount.hdr reconfiles/ini/pair-recon-ngc-%02d.ini 0 50
+rdmd reconfiles/mk_recon_paircount.d 1 1000 recon_sgc/a0.6452_%04d.dr12d_cmass_sgc paircounts/recon_sgc/qpm-recon-%04d ini/paircount.hdr reconfiles/ini/pair-recon-sgc-%02d.ini 0 50
