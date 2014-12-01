@@ -312,3 +312,67 @@ class HistArr(HT, ulong Nhist) {
 
 	
 }
+
+
+
+// NOTE : Dynamic version of above
+// Arrays of histograms --- useful if you want to simultaneously histogram
+// multiple quantities
+// This is a convenience wrapper around a public array of Histogram2D 
+// HT : type of histogram
+class HistArrDyn(HT) {
+
+	alias typeof(this) MyType;
+	HT[] hists;
+	ulong Nhist;
+	
+	this(T:MyType, U:bool) (T hin, U reset=true) {
+		hists = new HT[hin.Nhist];
+		foreach (ref h1; hists) {
+			h1 = new HT(hin[0], reset);
+		}
+	}
+
+	
+	this(T:MyType) (T hin) {
+		hists = new HT[hin.Nhist];
+		foreach (ref h1; hists) {
+			h1 = new HT(hin[0], true);
+		}
+	}
+
+	// Simple wrapper for all other constructors
+	this(T...) (ulong N, T args) {
+	    Nhist = N;
+		hists = new HT[Nhist];
+		foreach (ref h1; hists) {
+			h1 = new HT(args);
+		}
+	}
+
+	// We do use this in the paircounting code
+	ref MyType opOpAssign(string op) (MyType rhs) if (op=="+") {
+		foreach (i, ref h1; hists) {
+			h1 += rhs[i];
+		}
+		return this;
+	} 
+
+	// Overload index
+	ref HT opIndex(ulong i) {
+		return hists[i];
+	}
+
+	void reset() {
+		foreach (ref h1; hists) h1.reset();
+	}
+
+	// MPI reduce
+	version(MPI) {
+		void mpiReduce(int root, MPI_Comm comm) {
+			foreach (ref h1; hists) h1.mpiReduce(root, comm);
+		}
+	}
+
+	
+}
