@@ -1,0 +1,3 @@
+rdmd ./ini/mk_rdzw_ini.d 1 1000 /project/projectdirs/boss/galaxy/QPM/dr11d_cmass/ngc/a0.6452_%04d.dr11d_cmass_ngc.rdzw ngc/a0.6452_%04d.dr11d_cmass_ngc.xyzwi ini/xyzwi.hdr ini/xyzwi-ngc-%02d.ini 0 100  
+rdmd ./ini/mk_rdzw_ini.d 1 1000 /project/projectdirs/boss/galaxy/QPM/dr11d_cmass/sgc/a0.6452_%04d.dr11d_cmass_sgc.rdzw sgc/a0.6452_%04d.dr11d_cmass_sgc.xyzwi ini/xyzwi.hdr ini/xyzwi-sgc-%02d.ini 0 100
+
