@@ -1,3 +1,5 @@
 rdmd ./ini/mk_rdzw_ini.d 1 1000 /project/projectdirs/boss/galaxy/QPM/dr11d_cmass/ngc/a0.6452_%04d.dr11d_cmass_ngc.rdzw ngc/a0.6452_%04d.dr11d_cmass_ngc.xyzwi ini/xyzwi.hdr ini/xyzwi-ngc-%02d.ini 0 100  
 rdmd ./ini/mk_rdzw_ini.d 1 1000 /project/projectdirs/boss/galaxy/QPM/dr11d_cmass/sgc/a0.6452_%04d.dr11d_cmass_sgc.rdzw sgc/a0.6452_%04d.dr11d_cmass_sgc.xyzwi ini/xyzwi.hdr ini/xyzwi-sgc-%02d.ini 0 100
 
+rdmd ./ini/mk_unrecon_paircount.d 1 1000 ngc/a0.6452_%04d.dr11d_cmass_ngc.xyzwi randoms/a0.6452_rand20x_v2.dr11d_cmass_ngc.xyzwi paircounts/ngc/qpm-unrecon-%04d ini/paircount.hdr ini/pair-unrecon-ngc-%02d.ini 0
+rdmd ./ini/mk_unrecon_paircount.d 1 1000 sgc/a0.6452_%04d.dr11d_cmass_sgc.xyzwi randoms/a0.6452_rand20x_v2.dr11d_cmass_sgc.xyzwi paircounts/sgc/qpm-unrecon-%04d ini/paircount.hdr ini/pair-unrecon-sgc-%02d.ini 0
