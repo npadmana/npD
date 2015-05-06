@@ -5,14 +5,14 @@ INIFILES=${NPD_DIR}/projects/ini/inifile.d
 GSLLINK=-L${GSL_DIR}/lib -lgsl -lgslcblas 
 OPTFLAGS=-O -release
 
-EXECS=do_smu.x
+EXECS=do_smu_zbin.x
 
 all : ${EXECS:%=${BUILDDIR}/%}
 
-${BUILDDIR}/do_smu.x : do_smu.d Makefile
+${BUILDDIR}/do_smu_zbin.x : do_smu_zbin.d Makefile
 	${DC} ${DCFLAGS} ${OPTFLAGS} -of${BUILDDIR}/do_smu.o \
 		${KDTREE:%=${NPD_DIR}/projects/kdtree/%} \
-		${INIFILES} do_smu.d \
+		${INIFILES} do_smu_zbin.d \
 		-version=${MPIVERSION} -version=MPI
 	${MPICC} ${LFLAGS} -o $@ ${BUILDDIR}/do_smu.o ${GSLLINK} -L${NPD_LIB} -lgsld -lmpid ${PHOBOSLIB}
 

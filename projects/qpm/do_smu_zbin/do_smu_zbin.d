@@ -10,12 +10,13 @@ import points, pairhist, kdtree, paircounters;
 //----------------------------------------------------------
 struct Particle {
 	double[3] x;
-	double w, x2, xchi;
+	double w, x2, zred;
+	ulong zflag;
 
-	this(double[] arr, double chifid) {
-		x[] = arr[0..3]; w=arr[3];
+	this(double[] arr) {
+		x[] = arr[0..3]; w=arr[3]; zred=arr[4];
 		x2 = x[0]*x[0] + x[1]*x[1] + x[2]*x[2];
-		xchi = sqrt(x2)/chifid - 1;
+    zflag = 0;
 	}
 
 	double dist(Particle p2) {
@@ -36,7 +37,7 @@ Particle[] readFile(string fn, double chifid) {
 	auto fin = File(fn);
 	Particle[] parr;
 	foreach (line; fin.byLine()) {
-		auto p = Particle(to!(double[])(strip(line).split), chifid);
+		auto p = Particle(to!(double[])(strip(line).split));
 		parr ~= p;
 	}
 	return parr;
@@ -110,15 +111,16 @@ void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf, double chifid) 
 //--------------------------------------------------------
 
 // Three histograms, for 1,x,x^2
-alias HistArr!(Histogram2D, 3) MyHist;
+alias HistArrDyn!(Histogram2D) MyHist;
 alias KDNode!(Particle,3) MyKDNode;
 
 class SMuPairCounter : PairCounter!(Particle, 3, MyHist) {
 
 	// Define the constructor
-	this(double smax, int ns, int nmu) {
+	this(ulong nhist, double smax, int ns, int nmu) {
 		// Set up the histogram 
-		this.hist = new MyHist(ns,0.0,smax,nmu,0,1.0+1.0e-10); // Make sure 1 falls into the histogram
+		this.hist = new MyHist(nhist,ns,0.0,smax,nmu,0,1.0+1.0e-10); // Make sure 1 falls into the histogram
+    this.nhist=nhist;
 		this.ns = ns;
 		this.nmu = nmu;
 		this.rmin = 0; this.rmax = smax+1.0e-10;
@@ -129,6 +131,7 @@ class SMuPairCounter : PairCounter!(Particle, 3, MyHist) {
 	override void accumulate(MyHist h1, Particle[] arr1, Particle[] arr2, double scale=1) {
 		double s1, l1, s2, l2, sl, mu, xcen,wprod;
 		int imu, ins;
+    ulong flag1;
 		foreach (p1; arr1) {
 			foreach (p2; arr2) {
 				mu = 2*(p1.x[0]*p2.x[0] + p1.x[1]*p2.x[1] + p1.x[2]*p2.x[2]);
@@ -141,17 +144,19 @@ class SMuPairCounter : PairCounter!(Particle, 3, MyHist) {
 				if ((s2 >= smax2) || (s2 < 1.0e-50)) continue;
 
 				// Compute central x value
-				xcen = (p1.xchi + p2.xchi)/2;
 				wprod = (scale*p1.w*p2.w);
 
 				s1 = sqrt(s2);
 				mu = sl / (s1*sqrt(l2));
 				if (mu < 0) mu = -mu;
-				
-				// Accumulate, weighting by 1,x,x^2
-				h1[0].accumulate(s1,mu,wprod);
-				h1[1].accumulate(s1,mu,wprod*xcen);
-				h1[2].accumulate(s1,mu,wprod*xcen*xcen);
+        
+        // AND the two flags
+        flag1 = p1.zflag & p2.zflag;
+       
+        // Accumulate into bins
+        foreach (ihist; 0..nhist) {
+          if ((flag1 & 2^^ihist) != 0) h1[ihist].accumulate(s1,mu,wprod);
+        }
 
 			}
 		}
@@ -181,6 +186,7 @@ class SMuPairCounter : PairCounter!(Particle, 3, MyHist) {
 	private {
 		int ns, nmu;
 		double smax2;
+    ulong nhist;
 	};
 
 }
@@ -212,6 +218,25 @@ void runmain(char[][] args) {
 	auto minPart = ini.get!uint("minPart");
 	auto chifid = ini.get!double("chifid");
 
+  // Get the list of zbins
+  struct ZBin {
+    double zlo, zhi;
+  }
+  auto zbinarr = filter!(a=>startsWith(a,"zbin"))(ini.keys).array;
+  sort(zbinarr);
+  ZBin[] zbins = new ZBin[zbinarr.length];
+  foreach (i,zbin1; zbinarr) {
+    auto tmp = ini.get!(double[])(zbin1);
+    zbins[i].zlo = tmp[0];
+    zbins[i].zhi = tmp[1];
+  }
+  auto nzbins=zbins.length;
+  if (nzbins > 32) throw new Exception("A maximum of 32 redshift bins are currently supported");
+  if (rank==0) {
+    writef("# of zbins = %s\n",nzbins);
+  }
+
+
 	// Parallel or not
 	auto nworkers = ini.get!int("nworkers");
 
@@ -220,7 +245,7 @@ void runmain(char[][] args) {
 	sort(jobs);
 
 	// Initial paircounters 
-	auto PP = new SMuPairCounter(smax, ns, nmu);
+	auto PP = new SMuPairCounter(nzbins,smax, ns, nmu);
 
 	Particle[] darr, rarr;
 	Particle[][] dsplit, rsplit;
@@ -263,6 +288,21 @@ void runmain(char[][] args) {
 			send(readerTid, true);
 
 			writefln("%s : Data read in.....", job1);
+
+
+      // Set the redshift-bin flags
+      foreach (ref darr1; darr) {
+        foreach (iz,z1; zbins) {
+          if ((darr1.zred >= z1.zlo) && (darr1.zred < z1.zhi)) darr1.zflag |= 2^^iz;
+        }
+      }
+      foreach (ref rarr1; rarr) {
+        foreach (iz,z1; zbins) {
+          if ((rarr1.zred >= z1.zlo) && (rarr1.zred < z1.zhi)) rarr1.zflag |= 2^^iz;
+        }
+      }
+      writefln("%s : Redshift bin flags set....",job1);
+
 
 			randomShuffle(darr);
 			randomShuffle(rarr);
