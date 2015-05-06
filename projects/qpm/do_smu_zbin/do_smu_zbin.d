@@ -29,8 +29,12 @@ struct Particle {
 }
 
 
-double sumOfWeights(Particle[] arr) {
-	return reduce!((a,b) => a + b.w)(0.0, arr);
+double sumOfWeights(Particle[] arr, ulong ibin) {
+  double ret=0.0;
+  foreach (a1; arr) {
+    if ((a1.zflag & 2^^ibin) != 0) ret += a1.w;
+  }
+  return ret;
 }
 
 Particle[] readFile(string fn, double chifid) {
@@ -310,8 +314,10 @@ void runmain(char[][] args) {
 
 			// Write the norm file here!
 			auto fnorm = File(params[2]~"-norm.dat","w");
-			fnorm.writefln("%s: %20.15e",params[0],sumOfWeights(darr));
-			fnorm.writefln("%s: %20.15e",params[1],sumOfWeights(rarr));
+      foreach (iz ;0..nzbins) {
+        fnorm.writefln("%s: %20.15e",params[0],sumOfWeights(darr,iz));
+        fnorm.writefln("%s: %20.15e",params[1],sumOfWeights(rarr,iz));
+      }
 		}
 
 		// Build trees
