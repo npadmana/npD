@@ -37,7 +37,7 @@ double sumOfWeights(Particle[] arr, ulong ibin) {
   return ret;
 }
 
-Particle[] readFile(string fn, double chifid) {
+Particle[] readFile(string fn) {
 	auto fin = File(fn);
 	Particle[] parr;
 	foreach (line; fin.byLine()) {
@@ -72,7 +72,7 @@ synchronized class SyncArray {
 }
 
 
-void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf, double chifid) {
+void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf) {
 	writeln("Reader started");
 
 	auto nfiles = receiveOnly!(int)();
@@ -89,8 +89,8 @@ void readerProcess(shared SyncArray dbuf, shared SyncArray rbuf, double chifid) 
 	// The reader process needs to protect against failures -- these may not propagate cleanly down to the user.
 	try {
 		foreach (dfn, rfn; lockstep(dfns, rfns)) {
-			darr = readFile(dfn, chifid);
-			if (rfn != rfn_save) rarr = readFile(rfn, chifid);
+			darr = readFile(dfn);
+			if (rfn != rfn_save) rarr = readFile(rfn);
 			rfn_save = rfn;
 			dbuf.push(darr);
 			rbuf.push(rarr);
@@ -220,7 +220,6 @@ void runmain(char[][] args) {
 	auto nmu = ini.get!int("nmu");
 	auto smax = ini.get!double("smax");
 	auto minPart = ini.get!uint("minPart");
-	auto chifid = ini.get!double("chifid");
 
   // Get the list of zbins
   struct ZBin {
@@ -262,7 +261,7 @@ void runmain(char[][] args) {
 	bool flag;
 	Tid readerTid;
 	if (rank == 0) {
-		readerTid = spawn(&readerProcess, dbuf, rbuf, chifid);
+		readerTid = spawn(&readerProcess, dbuf, rbuf);
 		send(readerTid, to!int(jobs.length));
 		foreach (job1; jobs) {
 			auto params = ini.get!(string[])(job1);
