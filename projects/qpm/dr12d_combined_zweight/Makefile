@@ -1,7 +1,7 @@
 include ${NPD_DIR}/make.vars
 
 DFILES=
-SRCS=rdzw2xyzwi.d
+SRCS=rdzw2xyzwi.d rdzw2xyzwi_ngc.d
 EXECS=${SRCS:%.d=${BUILDDIR}/%.x}
 GSLLINK=-L${NPD_LIB} -L${GSL_DIR}/lib -lgsld -lgsl -lgslcblas 
 
@@ -13,6 +13,9 @@ ${BUILDDIR}/rdzw2xyzwi.x : rdzw2xyzwi.d
 	${DC} -I${NPD_DIR}/projects ${DCFLAGS} $< ${DFILES} -of$@.o ${NPD_DIR}/projects/physics/cosmo.d ${NPD_DIR}/projects/ini/inifile.d
 	${CC} ${LFLAGS} -o $@ $@.o ${GSLLINK} ${PHOBOSLIB}
 
+${BUILDDIR}/rdzw2xyzwi_ngc.x : rdzw2xyzwi_ngc.d
+	${DC} -I${NPD_DIR}/projects ${DCFLAGS} $< ${DFILES} -of$@.o ${NPD_DIR}/projects/physics/cosmo.d ${NPD_DIR}/projects/ini/inifile.d
+	${CC} ${LFLAGS} -o $@ $@.o ${GSLLINK} ${PHOBOSLIB}
 .SUFFIXES:
 
 ${BUILDDIR}/%.x: %.d
