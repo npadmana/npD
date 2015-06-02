@@ -29,7 +29,7 @@ struct FnStr {
   }
 
   @property string job() {
-    auto str = format("job%04d=%s %s true",i,fn1, fn2);
+    auto str = format("job%04d=%s %s 4",i,fn1, fn2);
     return str;
   }
 
