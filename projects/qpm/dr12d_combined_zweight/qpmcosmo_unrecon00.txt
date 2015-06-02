@@ -1,0 +1,8 @@
+./data
+./exec
+./qpmcosmo/randoms
+./qpmcosmo/ini
+./qpmcosmo/paircounts
+./qpmcosmo/ngc
+./qpmcosmo/sgc
+./qpmcosmo/scripts
