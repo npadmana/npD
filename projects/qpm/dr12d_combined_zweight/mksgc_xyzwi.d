@@ -9,12 +9,12 @@ void main() {
 
 cd $PBS_O_WORKDIR
 module load gsl
-aprun -n 1 ../exec/rdzw2xyzwi.x ini/xyzwi-sgc-%d.ini
+aprun -n 1 ../exec/rdzw2xyzwi_ngc.x ini/xyzwi-ngc-%d.ini
 
 ";
 
    foreach(i;0..10) {
-	auto ff = File(format("sgc.%02d.qsub",i),"w");
+	auto ff = File(format("ngc.%02d.qsub",i),"w");
 	ff.writeln(format(hdr,i));
    }
 
