@@ -271,19 +271,26 @@ void runmain(char[][] args) {
 	}
 
 	// Loop over jobs
-	bool noRR;
+	bool noRR, noDR;
 	StopWatch sw;
 	foreach (job1; jobs) {
 		MPI_Barrier(MPI_COMM_WORLD);
 		sw.reset(); sw.start();
 		auto params = ini.get!(string[])(job1);
 		if (params.length < 3) throw new Exception("job specs need at least three parameters");
-		if ((params.length > 3) && (params[3]=="noRR")) noRR=true; else noRR=false;
+		if ((params.length > 3) && (params[3]=="noDR")) {
+      noRR=true;
+      noDR=true;
+    } else {
+		  if ((params.length > 3) && (params[3]=="noRR")) noRR=true; else noRR=false;
+      noDR=false;
+    }
 
 		if (rank==0) {
 			writef("%s : Processing D=%s and D=%s to %s-{norm,DD,DR",job1, params[0],params[1],params[2]);
 			if (!noRR) write(",RR");
 			writeln("}.dat .....");
+      if (noDR) writeln("NOTE : DR will also be skipped.");
 
 			flag = receiveOnly!bool();
 			darr = dbuf.pop;
@@ -368,6 +375,7 @@ void runmain(char[][] args) {
 		}
 
 		// DR 
+    if (noDR) continue;
 		computeCorr(droot, rroot);
 		if (rank==0) {
 			PP.write(File(params[2]~"-DR.dat","w"));
