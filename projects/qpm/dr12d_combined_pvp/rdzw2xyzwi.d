@@ -46,7 +46,7 @@ void rdzw2xyzwi(D)(D dist, Particle[] arr) {
 void write_xyzwi(string fn, Particle[] arr) {
 	auto ff = File(fn, "w");
 	foreach (i, p; arr) {
-		ff.writefln("%10.4f %10.4f %10.4f %7.4f %7.4f %8d", p.x, p.y, p.z, p.w, p.zred, i+1);
+		ff.writefln("%12.4f %12.4f %12.4f %12.4f %7.4f %8d", p.x, p.y, p.z, p.w, p.zred, i+1);
 	}
 	ff.close(); // Nice to flush!
 }
