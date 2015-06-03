@@ -1,0 +1,21 @@
+# Correlation function parameters
+ns=202
+nmu=120
+smax = 202.0
+
+# Redshift bins
+zbin001= 0.21 0.50
+zbin002= 0.40 0.60
+zbin003= 0.50 0.74
+
+
+# Tree parameters
+minPart=500
+
+
+# Job parameters
+nworkers=23
+
+# jobs --- D filename R filename prefix [noRR]
+# prefix the parameters by job (followed by anything --- the code will sort into lexical order)
+# separate by spaces, if there is an optional 4th parameter == noRR, skip the RR in this case
