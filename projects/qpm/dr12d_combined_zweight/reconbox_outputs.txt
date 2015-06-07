@@ -1,0 +1,32 @@
+#### NGC ######
+
+nid01281 qpmcosmo/ngc> rdmd ../code/reconbox.d qpm_biasmock_0988.dr12d_combined_ngc.xyzwi
+[-1861.59, -1708.47, -110.175]
+[-56.2584, 1616.44, 1729.7]
+Lbox (unpadded) = 3324.913200
+Lbox (padded) = 3524.913200
+Origin : [2721.38, 1808.47, 952.692]
+nid01281 qpmcosmo/ngc> rdmd ../code/reconbox.d qpm_biasmock_0112.dr12d_combined_ngc.xyzwi                                                                                             
+[-1861.58, -1710.18, -105.84]
+[-59.1932, 1616.9, 1723.9]
+Lbox (unpadded) = 3327.074300
+Lbox (padded) = 3527.074300
+Origin : [2723.92, 1810.18, 954.509]
+nid01281 qpmcosmo/ngc> 
+
+#### SGC ######
+
+nid01281 qpmcosmo/sgc> rdmd ../code/reconbox.d qpm_biasmock_0112.dr12d_combined_sgc.xyzwi
+[409.787, -1263.1, -351.062]
+[1858.93, 1312.22, 1021.57]
+Lbox (unpadded) = 2575.319100
+Lbox (padded) = 2775.319100
+Origin : [253.302, 1363.1, 1052.4]
+nid01281 qpmcosmo/sgc> rdmd ../code/reconbox.d qpm_biasmock_0567.dr12d_combined_sgc.xyzwi
+[399.321, -1250.93, -340.776]
+[1860.11, 1307.56, 1030.24]
+Lbox (unpadded) = 2558.493100
+Lbox (padded) = 2758.493100
+Origin : [249.533, 1350.93, 1034.51]
+nid01281 qpmcosmo/sgc> 
+
