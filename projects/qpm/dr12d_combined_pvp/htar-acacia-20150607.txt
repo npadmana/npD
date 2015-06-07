@@ -1,0 +1,8 @@
+./exec
+./acacia
+./acacia/randoms
+./acacia/ini
+./acacia/paircounts
+./acacia/ngc
+./acacia/scripts
+./acacia/sgc
