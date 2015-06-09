@@ -1,0 +1,101 @@
+
+<?xml version="1.0" ?>
+<!-- Input XML template for reconstruction on the LasDamas real space data -->
+<params>
+  <!-- First specify all the common parameters -->
+  <LBox>3511.894015</LBox>
+  <Ngrid>512</Ngrid>
+  <Mask>
+    <randomfn>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</randomfn>
+    <!-- IMPORTANT : ESTIMATE BASED ON LBOX AND NGRID AND SET APPROPRIATELY -->
+    <threshold>0.001</threshold>
+  </Mask>
+  <ReconParams>
+    <bias>2.2</bias>
+    <beta>0.3440</beta>
+    <smooth>15.0</smooth>
+    <planeparallel>0</planeparallel>
+    <MaxIterations>2000</MaxIterations>
+    <NRandomFac>10</NRandomFac>
+    <originx>2705.079408</originx>
+    <originy>1800.18957</originy>
+    <originz>954.1271965</originz>
+  </ReconParams>
+  <PkPrior>
+    <fn>acaciacmass_matterpower.dat</fn>
+    <bias>2.2</bias>
+    <noise>3.0e3</noise>
+    <dorandom>0</dorandom> 
+  </PkPrior>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0001.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0001.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0001_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0002.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0002.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0002_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0003.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0003.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0003_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0004.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0004.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0004_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0005.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0005.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0005_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0006.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0006.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0006_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0007.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0007.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0007_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0008.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0008.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0008_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0009.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0009.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0009_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+<LDzspace>
+<indata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0010.dr12d_combined_ngc.xyzwzi</indata>
+<outdata>/scratch2/scratchdirs/ajcuesta/combined/recon/ngc/qpm_biasmock_0010.dr12d_combined_ngc.xyzwzi.recon</outdata>
+<inrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi</inrand>
+<outrand>/scratch2/scratchdirs/ajcuesta/combined/recon/randoms/qpm_0010_dr12d_combined_randoms_x50_ngcshufflenew.xyzwzi.recon</outrand>
+</LDzspace>
+
+</params>

@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<!-- Input XML template for reconstruction on the LasDamas real space data -->
+<params>
+  <!-- First specify all the common parameters -->
+  <LBox>3527.08</LBox>
+  <Ngrid>512</Ngrid>
+  <Mask>
+    <randomfn>randoms/qpm_dr12d_combined_randoms_x50_ngc.xyzwi</randomfn>
+    <!-- IMPORTANT : ESTIMATE BASED ON LBOX AND NGRID AND SET APPROPRIATELY -->
+    <threshold>0.001</threshold>
+  </Mask>
+  <ReconParams>
+    <bias>2.2</bias>
+    <beta>0.3440</beta>
+    <smooth>15.0</smooth>
+    <planeparallel>0</planeparallel>
+    <MaxIterations>2000</MaxIterations>
+    <NRandomFac>10</NRandomFac>
+    <originx>2723.92</originx>
+    <originy>1810.18</originy>
+    <originz>954.509</originz>
+  </ReconParams>
+  <PkPrior>
+    <fn>acaciacmass_matterpower.dat</fn>
+    <bias>2.2</bias>
+    <noise>3.0e3</noise>
+    <dorandom>0</dorandom> 
+  </PkPrior>
+
+
