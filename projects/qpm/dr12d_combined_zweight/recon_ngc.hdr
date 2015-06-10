@@ -21,7 +21,7 @@
     <originz>954.509</originz>
   </ReconParams>
   <PkPrior>
-    <fn>acaciacmass_matterpower.dat</fn>
+    <fn>ini/acaciacmass_matterpower.dat</fn>
     <bias>2.2</bias>
     <noise>3.0e3</noise>
     <dorandom>0</dorandom> 
