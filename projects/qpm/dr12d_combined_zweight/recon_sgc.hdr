@@ -5,7 +5,7 @@
   <LBox>2758.50</LBox>
   <Ngrid>512</Ngrid>
   <Mask>
-    <randomfn>randoms/qpm_dr12d_combined_randoms_x50_ngc.xyzwi</randomfn>
+    <randomfn>randoms/qpm_dr12d_combined_randoms_x50_sgc.xyzwi</randomfn>
     <!-- IMPORTANT : ESTIMATE BASED ON LBOX AND NGRID AND SET APPROPRIATELY -->
     <threshold>0.001</threshold>
   </Mask>
