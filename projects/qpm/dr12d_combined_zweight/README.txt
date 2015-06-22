@@ -19,3 +19,4 @@ htar -cf 2015/boss/QPM/dr12d_combined_zweight_qpmcosmo_unrecon00.tar -L qpmcosmo
 
 ## Reconstruction XML files
 rdmd code/mk_recon_xml.d 1 1000 ngc/qpm_biasmock_%04d.dr12d_combined_ngc.xyzwi randoms/qpm_dr12d_combined_randoms_x50_ngc.xyzwi recon_ngc/qpm_biasmock_%04d.dr12d_combined_ngc ini/recon_ngc.hdr ini/recon_ngc_%02d.xml 0 50
+rdmd code/mk_recon_xml.d 1 1000 sgc/qpm_biasmock_%04d.dr12d_combined_sgc.xyzwi randoms/qpm_dr12d_combined_randoms_x50_sgc.xyzwi recon_sgc/qpm_biasmock_%04d.dr12d_combined_sgc ini/recon_sgc.hdr ini/recon_sgc_%02d.xml 0 50

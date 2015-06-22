@@ -16,7 +16,7 @@
     <planeparallel>0</planeparallel>
     <MaxIterations>2000</MaxIterations>
     <NRandomFac>10</NRandomFac>
-    <originx>249.53<originx>
+    <originx>249.53</originx>
     <originy>1350.93</originy>
     <originz>1034.51</originz>
   </ReconParams>
