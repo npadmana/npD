@@ -1,0 +1,11 @@
+#PBS -q regular
+#PBS -l mppwidth=24
+#PBS -l walltime=02:00:00
+#PBS -j oe
+#PBS -A hacc
+#PBS -o mkbin_rshift.$PBS_JOBID.out
+
+cd $PBS_O_WORKDIR
+setenv WC `qpm_biasmock_0001.dr12d_combined_?gc.rshift | wc -l`
+aprun -n 1 -N 1 -d 24 -cc none ../../exec/xyzwi2bin.x --pattern='*.rshift' --clobber=true --nParallel=12 --preAlloc=$WC --memStats
+

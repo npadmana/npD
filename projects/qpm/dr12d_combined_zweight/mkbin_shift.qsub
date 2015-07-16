@@ -1,0 +1,10 @@
+#PBS -q regular
+#PBS -l mppwidth=24
+#PBS -l walltime=00:15:00
+#PBS -j oe
+#PBS -A hacc
+#PBS -o mkbin_shift.$PBS_JOBID.out
+
+cd $PBS_O_WORKDIR
+aprun -n 1 -N 1 -d 24 -cc none ../../exec/xyzwi2bin.x --pattern='*.shift' --clobber=true --nParallel=24 --memStats
+
